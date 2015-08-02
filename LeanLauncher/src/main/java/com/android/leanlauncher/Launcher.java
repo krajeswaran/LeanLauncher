@@ -126,7 +126,7 @@ public class Launcher extends Activity
         implements View.OnClickListener, OnLongClickListener, LauncherModel.Callbacks,
                    View.OnTouchListener, PageSwitchListener {
     static final String TAG = "LeanLauncher";
-    static final boolean LOGD = false;
+    static final boolean LOGD = BuildConfig.DEBUG;
 
     static final boolean PROFILE_STARTUP = false;
     static final boolean DEBUG_WIDGETS = false;
@@ -134,7 +134,7 @@ public class Launcher extends Activity
     static final boolean DEBUG_RESUME_TIME = false;
     static final boolean DEBUG_DUMP_LOG = BuildConfig.DEBUG;
 
-    static final boolean ENABLE_DEBUG_INTENTS = false; // allow DebugIntents to run
+    static final boolean ENABLE_DEBUG_INTENTS = BuildConfig.DEBUG; // allow DebugIntents to run
 
     private static final int REQUEST_CREATE_SHORTCUT = 1;
     private static final int REQUEST_CREATE_APPWIDGET = 5;
@@ -219,7 +219,6 @@ public class Launcher extends Activity
 
     private Workspace mWorkspace;
     private View mLauncherView;
-    private View mPageIndicators;
     private DragLayer mDragLayer;
     private DragController mDragController;
     private View mWeightWatcher;
@@ -855,84 +854,6 @@ public class Launcher extends Activity
         mDragController.resetLastGestureUpTime();
     }
 
-    public interface LauncherOverlay {
-
-        /**
-         * Touch interaction leading to overscroll has begun
-         */
-        public void onScrollInteractionBegin();
-
-        /**
-         * Touch interaction related to overscroll has ended
-         */
-        public void onScrollInteractionEnd();
-
-        /**
-         * Scroll progress, between 0 and 100, when the user scrolls beyond the leftmost
-         * screen (or in the case of RTL, the rightmost screen).
-         */
-        public void onScrollChange(int progress, boolean rtl);
-
-        /**
-         * Screen has stopped scrolling
-         */
-        public void onScrollSettled();
-
-        /**
-         * This method can be called by the Launcher in order to force the LauncherOverlay
-         * to exit fully immersive mode.
-         */
-        public void forceExitFullImmersion();
-    }
-
-    public interface LauncherOverlayCallbacks {
-        /**
-         * This method indicates whether a call to {@link #enterFullImmersion()} will succeed,
-         * however it doesn't modify any state within the launcher.
-         */
-        public boolean canEnterFullImmersion();
-
-        /**
-         * Should be called to tell Launcher that the LauncherOverlay will take over interaction,
-         * eg. by occupying the full screen and handling all touch events.
-         *
-         * @return true if Launcher allows the LauncherOverlay to become fully immersive. In this
-         *          case, Launcher will modify any necessary state and assumes the overlay is
-         *          handling all interaction. If false, the LauncherOverlay should cancel any
-         *
-         */
-        public boolean enterFullImmersion();
-
-        /**
-         * Must be called when exiting fully immersive mode. Indicates to Launcher that it has
-         * full control over UI and state.
-         */
-        public void exitFullImmersion();
-    }
-
-    class LauncherOverlayCallbacksImpl implements LauncherOverlayCallbacks {
-
-        @Override
-        public boolean canEnterFullImmersion() {
-            return mState == State.WORKSPACE;
-        }
-
-        @Override
-        public boolean enterFullImmersion() {
-            if (mState == State.WORKSPACE) {
-                // When fully immersed, disregard any touches which fall through.
-                mDragLayer.setBlockTouch(true);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public void exitFullImmersion() {
-            mDragLayer.setBlockTouch(false);
-        }
-    }
-
     @Override
     public Object onRetainNonConfigurationInstance() {
         // Flag the loader to stop early before switching
@@ -1068,7 +989,6 @@ public class Launcher extends Activity
         mFocusHandler = (FocusIndicatorView) findViewById(R.id.focus_indicator);
         mDragLayer = (DragLayer) findViewById(R.id.drag_layer);
         mWorkspace = (Workspace) mDragLayer.findViewById(R.id.workspace);
-        mPageIndicators = mDragLayer.findViewById(R.id.page_indicator);
 
         mLauncherView.setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
@@ -1110,7 +1030,7 @@ public class Launcher extends Activity
 
         // Get the search/delete bar
         mDeleteDropTargetBar = (DeleteDropTargetBar)
-                mDragLayer.findViewById(R.id.search_drop_target_bar);
+                mDragLayer.findViewById(R.id.delete_drop_target_bar);
 
         // Setup AppsCustomize
         mAppsCustomizeTabHost = (AppsCustomizeTabHost) findViewById(R.id.apps_customize_pane);
@@ -1162,7 +1082,7 @@ public class Launcher extends Activity
      * @return A View inflated from R.layout.application.
      */
     View createShortcut(ShortcutInfo info) {
-        return createShortcut(R.layout.application, mWorkspace, info);
+        return createShortcut(R.layout.application, mWorkspace.getScreen(), info);
     }
 
     /**
@@ -1581,7 +1501,7 @@ public class Launcher extends Activity
         return mOverviewPanel;
     }
 
-    public DeleteDropTargetBar getSearchBar() {
+    public DeleteDropTargetBar getDeleteDropBar() {
         return mDeleteDropTargetBar;
     }
 
@@ -1761,7 +1681,7 @@ public class Launcher extends Activity
         mWorkspace.exitWidgetResizeMode();
         if (!mWorkspace.isInOverviewMode()) {
             // Show the overview mode
-//            showOverviewMode(true);
+            showOverviewMode(true);
         } else {
             showWorkspace(true);
         }
@@ -1979,16 +1899,10 @@ public class Launcher extends Activity
             return;
         }
 
-        if (v instanceof Workspace) {
+        if (v instanceof CellLayout || v instanceof Workspace) {
             if (mWorkspace.isInOverviewMode()) {
                 mWorkspace.exitOverviewMode(true);
-            }
-            return;
-        }
-
-        if (v instanceof CellLayout) {
-            if (mWorkspace.isInOverviewMode()) {
-                mWorkspace.exitOverviewMode(true);
+				return;
             }
         }
 
@@ -2004,10 +1918,6 @@ public class Launcher extends Activity
                 onClickPendingWidget((PendingAppWidgetHostView) v);
             }
         }
-    }
-
-    public void onClickPagedViewIcon(View v) {
-        startAppShortcutOrInfoActivity(v);
     }
 
     public boolean onTouch(View v, MotionEvent event) {
@@ -3448,6 +3358,8 @@ public class Launcher extends Activity
             }
             mSavedState = null;
         }
+
+        mWorkspace.restoreInstanceStateForWorkspace();
 
         setWorkspaceLoading(false);
         sendLoadingCompleteBroadcastIfNecessary();

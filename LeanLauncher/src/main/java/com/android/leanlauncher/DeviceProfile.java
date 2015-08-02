@@ -109,16 +109,11 @@ public class DeviceProfile {
     int allAppsCellWidthPx;
     int allAppsCellHeightPx;
     int allAppsCellPaddingPx;
-    int folderBackgroundOffset;
-    int folderIconSizePx;
-    int folderCellWidthPx;
-    int folderCellHeightPx;
     int allAppsNumRows;
     int allAppsNumCols;
     int searchBarSpaceWidthPx;
     int searchBarSpaceHeightPx;
     int pageIndicatorHeightPx;
-    int hotseatIconSizePx;
     int allAppsButtonVisualSize;
 
     float dragViewScale;
@@ -129,11 +124,8 @@ public class DeviceProfile {
     private ArrayList<DeviceProfileCallbacks> mCallbacks = new ArrayList<DeviceProfileCallbacks>();
 
     DeviceProfile(String n, float w, float h, float r, float c,
-                  float is, float its, float hs, float his, int dlId) {
-        // Ensure that we have an odd number of hotseat items (since we need to place all apps)
-        if (!LauncherAppState.isDisableAllApps() && hs % 2 == 0) {
-            throw new RuntimeException("All Device Profiles must have an odd number of hotseat spaces");
-        }
+                  float is, float its, int dlId) {
+        // Ensure that we have an odd number of items (since we need to place all apps)
 
         name = n;
         minWidthDps = w;
@@ -233,7 +225,7 @@ public class DeviceProfile {
     private void computeAllAppsButtonSize(Context context) {
         Resources res = context.getResources();
         float padding = res.getInteger(R.integer.config_allAppsButtonPaddingPercent) / 100f;
-        allAppsButtonVisualSize = (int) (hotseatIconSizePx * (1 - padding));
+        allAppsButtonVisualSize = (int) (DynamicGrid.DEFAULT_ICON_SIZE_PX * (1 - padding));
     }
 
     void addCallback(DeviceProfileCallbacks cb) {
@@ -330,12 +322,6 @@ public class DeviceProfile {
         cellHeightPx = iconSizePx + iconDrawablePaddingPx + (int) Math.ceil(fm.bottom - fm.top);
         final float scaleDps = resources.getDimensionPixelSize(R.dimen.dragViewScale);
         dragViewScale = (iconSizePx + scaleDps) / iconSizePx;
-
-        // Folder
-        folderCellWidthPx = cellWidthPx + 3 * edgeMarginPx;
-        folderCellHeightPx = cellHeightPx + edgeMarginPx;
-        folderBackgroundOffset = -edgeMarginPx;
-        folderIconSizePx = iconSizePx + 2 * -folderBackgroundOffset;
 
         // All Apps
         allAppsCellWidthPx = allAppsIconSizePx;
@@ -499,33 +485,12 @@ public class DeviceProfile {
         return bounds;
     }
 
-    /** Returns the bounds of the workspace page indicators. */
-    Rect getWorkspacePageIndicatorBounds(Rect insets) {
-        Rect workspacePadding = getWorkspacePadding();
-        if (isLandscape && transposeLayoutWithOrientation) {
-            if (isLayoutRtl) {
-                return new Rect(workspacePadding.left, workspacePadding.top,
-                        workspacePadding.left + pageIndicatorHeightPx,
-                        heightPx - workspacePadding.bottom - insets.bottom);
-            } else {
-                int pageIndicatorLeft = widthPx - workspacePadding.right;
-                return new Rect(pageIndicatorLeft, workspacePadding.top,
-                        pageIndicatorLeft + pageIndicatorHeightPx,
-                        heightPx - workspacePadding.bottom - insets.bottom);
-            }
-        } else {
-            int pageIndicatorTop = heightPx - insets.bottom - workspacePadding.bottom;
-            return new Rect(workspacePadding.left, pageIndicatorTop,
-                    widthPx - workspacePadding.right, pageIndicatorTop + pageIndicatorHeightPx);
-        }
-    }
-
     /** Returns the workspace padding in the specified orientation */
     Rect getWorkspacePadding() {
         return getWorkspacePadding(isLandscape ? CellLayout.LANDSCAPE : CellLayout.PORTRAIT);
     }
     Rect getWorkspacePadding(int orientation) {
-        Rect searchBarBounds = getSearchBarBounds(orientation);
+//        Rect searchBarBounds = getSearchBarBounds(orientation);
         Rect padding = new Rect();
         if (orientation == CellLayout.LANDSCAPE &&
                 transposeLayoutWithOrientation) {
@@ -533,9 +498,9 @@ public class DeviceProfile {
             if (isLayoutRtl) {
                 // TODO revisit 0
                 padding.set(0, edgeMarginPx,
-                        searchBarBounds.width(), edgeMarginPx);
+                        0, edgeMarginPx);
             } else {
-                padding.set(searchBarBounds.width(), edgeMarginPx,
+                padding.set(0, edgeMarginPx,
                         0, edgeMarginPx);
             }
         } else {
@@ -549,8 +514,8 @@ public class DeviceProfile {
                 int height = (orientation != CellLayout.LANDSCAPE)
                         ? Math.max(widthPx, heightPx)
                         : Math.min(widthPx, heightPx);
-                int paddingTop = searchBarBounds.bottom;
-                int paddingBottom = pageIndicatorHeightPx;
+                int paddingTop = 0;
+                int paddingBottom = 0;
                 int availableWidth = Math.max(0, width - (int) ((numColumns * cellWidthPx) +
                         (numColumns * gapScale * cellWidthPx)));
                 int availableHeight = Math.max(0, height - paddingTop - paddingBottom
@@ -560,7 +525,7 @@ public class DeviceProfile {
             } else {
                 // Pad the top and bottom of the workspace with search/hotseat bar sizes
                 padding.set(desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.left,
-                        searchBarBounds.bottom,
+                        0,
                         desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.right,
                         pageIndicatorHeightPx);
             }
@@ -593,17 +558,6 @@ public class DeviceProfile {
         Rect overviewBar = getOverviewModeButtonBarRect();
         int pageSpace = availableHeightPx - workspacePadding.top - workspacePadding.bottom;
         return (overviewModeScaleFactor * (pageSpace - overviewBar.height())) / pageSpace;
-    }
-
-    // The rect returned will be extended to below the system ui that covers the workspace
-    Rect getHotseatRect() {
-        if (isVerticalBarLayout()) {
-            return new Rect(availableWidthPx, 0,
-                    Integer.MAX_VALUE, availableHeightPx);
-        } else {
-            return new Rect(0, availableHeightPx,
-                    availableWidthPx, Integer.MAX_VALUE);
-        }
     }
 
     int calculateCellWidth(int width, int countX) {
@@ -647,15 +601,15 @@ public class DeviceProfile {
         boolean hasVerticalBarLayout = isVerticalBarLayout();
 
         // Layout the search bar space
-        View searchBar = launcher.getSearchBar();
-        lp = (FrameLayout.LayoutParams) searchBar.getLayoutParams();
+        View deleteDropTargetBar = launcher.getDeleteDropBar();
+        lp = (FrameLayout.LayoutParams) deleteDropTargetBar.getLayoutParams();
         if (hasVerticalBarLayout) {
             // Vertical search bar space
             lp.gravity = Gravity.TOP | Gravity.LEFT;
             lp.width = searchBarSpaceHeightPx;
             lp.height = LayoutParams.WRAP_CONTENT;
 
-            LinearLayout targets = (LinearLayout) searchBar.findViewById(R.id.drag_target_bar);
+            LinearLayout targets = (LinearLayout) deleteDropTargetBar.findViewById(R.id.drag_target_bar);
             targets.setOrientation(LinearLayout.VERTICAL);
         } else {
             // Horizontal search bar space
@@ -663,7 +617,7 @@ public class DeviceProfile {
             lp.width = searchBarSpaceWidthPx;
             lp.height = searchBarSpaceHeightPx;
         }
-        searchBar.setLayoutParams(lp);
+        deleteDropTargetBar.setLayoutParams(lp);
 
         // Layout the workspace
         Workspace workspace = (Workspace) launcher.findViewById(R.id.workspace);
@@ -674,23 +628,6 @@ public class DeviceProfile {
         workspace.setLayoutParams(lp);
         workspace.setPadding(padding.left, padding.top, padding.right, padding.bottom);
 
-        // Layout the page indicators
-        View pageIndicator = launcher.findViewById(R.id.page_indicator);
-        if (pageIndicator != null) {
-            if (hasVerticalBarLayout) {
-                // Hide the page indicators when we have vertical search/hotseat
-                pageIndicator.setVisibility(View.GONE);
-            } else {
-                // Put the page indicators above the hotseat
-                lp = (FrameLayout.LayoutParams) pageIndicator.getLayoutParams();
-                lp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
-                lp.width = LayoutParams.WRAP_CONTENT;
-                lp.height = LayoutParams.WRAP_CONTENT;
-                lp.bottomMargin = 0;
-                pageIndicator.setLayoutParams(lp);
-            }
-        }
-
         // Layout AllApps
         AppsCustomizeTabHost host = (AppsCustomizeTabHost)
                 launcher.findViewById(R.id.apps_customize_pane);
@@ -698,7 +635,7 @@ public class DeviceProfile {
             // Center the all apps page indicator
             int pageIndicatorHeight = (int) (pageIndicatorHeightPx * Math.min(1f,
                     (allAppsIconSizePx / DynamicGrid.DEFAULT_ICON_SIZE_PX)));
-            pageIndicator = host.findViewById(R.id.apps_customize_page_indicator);
+            View pageIndicator = host.findViewById(R.id.apps_customize_page_indicator);
             if (pageIndicator != null) {
                 LinearLayout.LayoutParams lllp = (LinearLayout.LayoutParams) pageIndicator.getLayoutParams();
                 lllp.width = LayoutParams.WRAP_CONTENT;

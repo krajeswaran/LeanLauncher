@@ -30,21 +30,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.android.leanlauncher.FocusIndicatorView
-            android:id="@+id/focus_indicator"
-            android:layout_width="52dp"
-            android:layout_height="52dp" />
 
-        <!-- The workspace contains 5 screens of cells -->
         <com.android.leanlauncher.Workspace
             android:id="@+id/workspace"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             />
-
-        <include
-            android:id="@+id/search_drop_target_bar"
-            layout="@layout/search_drop_target_bar" />
 
         <include layout="@layout/overview_panel"
             android:id="@+id/overview_panel"
@@ -53,8 +44,10 @@
         <!-- Keep these behind the workspace so that they are not visible when
              we go into AllApps -->
         <include
-            android:id="@+id/search_drop_target_bar"
-            layout="@layout/search_drop_target_bar" />
+            android:id="@+id/delete_drop_target_bar"
+            layout="@layout/delete_drop_target_bar"
+			android:visibility="gone"
+            />
 
         <include layout="@layout/apps_customize_pane"
             android:id="@+id/apps_customize_pane"

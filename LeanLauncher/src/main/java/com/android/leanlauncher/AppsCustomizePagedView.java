@@ -860,7 +860,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         // Clean up all the async tasks
         Iterator<AppsCustomizeAsyncTask> iter = mRunningTasks.iterator();
         while (iter.hasNext()) {
-            AppsCustomizeAsyncTask task = (AppsCustomizeAsyncTask) iter.next();
+            AppsCustomizeAsyncTask task = iter.next();
             task.cancel(false);
             iter.remove();
             mDirtyPageContent.set(task.page, true);
@@ -894,7 +894,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         // Update the thread priorities given the direction lookahead
         Iterator<AppsCustomizeAsyncTask> iter = mRunningTasks.iterator();
         while (iter.hasNext()) {
-            AppsCustomizeAsyncTask task = (AppsCustomizeAsyncTask) iter.next();
+            AppsCustomizeAsyncTask task = iter.next();
             int pageIndex = task.page;
             if ((mNextPage > mCurrentPage && pageIndex >= mCurrentPage) ||
                 (mNextPage < mCurrentPage && pageIndex <= mCurrentPage)) {
@@ -999,7 +999,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         Iterator<AppsCustomizeAsyncTask> iter = mRunningTasks.iterator();
         int minPageDiff = Integer.MAX_VALUE;
         while (iter.hasNext()) {
-            AppsCustomizeAsyncTask task = (AppsCustomizeAsyncTask) iter.next();
+            AppsCustomizeAsyncTask task = iter.next();
             minPageDiff = Math.abs(task.page - toPage);
         }
 
@@ -1034,7 +1034,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         // Prune all tasks that are no longer needed
         Iterator<AppsCustomizeAsyncTask> iter = mRunningTasks.iterator();
         while (iter.hasNext()) {
-            AppsCustomizeAsyncTask task = (AppsCustomizeAsyncTask) iter.next();
+            AppsCustomizeAsyncTask task = iter.next();
             int taskPage = task.page;
             if (taskPage < getAssociatedLowerPageBound(mCurrentPage) ||
                     taskPage > getAssociatedUpperPageBound(mCurrentPage)) {

@@ -80,8 +80,8 @@ import java.util.Set;
  */
 public class LauncherModel extends BroadcastReceiver
         implements LauncherAppsCompat.OnAppsChangedCallbackCompat {
-    static final boolean DEBUG_LOADERS = false;
-    private static final boolean DEBUG_RECEIVER = false;
+    static final boolean DEBUG_LOADERS = BuildConfig.DEBUG;
+    private static final boolean DEBUG_RECEIVER = BuildConfig.DEBUG;
     private static final boolean REMOVE_UNRESTORED_ICONS = true;
     private static final boolean ADD_MANAGED_PROFILE_SHORTCUTS = false;
 
@@ -1206,7 +1206,7 @@ public class LauncherModel extends BroadcastReceiver
             }
 
             // Bind the workspace
-            bindWorkspace(-1);
+            bindWorkspace(0);
         }
 
         private void waitForIdle() {
@@ -1938,11 +1938,11 @@ public class LauncherModel extends BroadcastReceiver
                         String line = "";
 
                         for (int x = 0; x < countX; x++) {
-                            if (x < occupied.length && y < occupied[x].length) {
-                                line += (occupied[x][y] != null) ? "#" : ".";
-                            } else {
+//                            if (x < occupied.length && y < occupied[x].length) {
+//                                line += (occupied[x][y] != null) ? "#" : ".";
+//                            } else {
                                 line += "!";
-                            }
+//                            }
                         }
                         Log.d(TAG, "[ " + line + " ]");
                     }
@@ -2662,12 +2662,9 @@ public class LauncherModel extends BroadcastReceiver
 
     // Returns a list of ResolveInfos/AppWindowInfos in sorted order
     public static ArrayList<Object> getSortedWidgetsAndShortcuts(Context context) {
-        PackageManager packageManager = context.getPackageManager();
         final ArrayList<Object> widgetsAndShortcuts = new ArrayList<Object>();
         widgetsAndShortcuts.addAll(AppWidgetManagerCompat.getInstance(context).getAllProviders());
 
-        Intent shortcutsIntent = new Intent(Intent.ACTION_CREATE_SHORTCUT);
-        widgetsAndShortcuts.addAll(packageManager.queryIntentActivities(shortcutsIntent, 0));
         Collections.sort(widgetsAndShortcuts, new WidgetAndShortcutNameComparator(context));
         return widgetsAndShortcuts;
     }

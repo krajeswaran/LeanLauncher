@@ -47,6 +47,7 @@ import android.os.IBinder;
 import android.os.Parcelable;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.Choreographer;
@@ -60,7 +61,6 @@ import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.widget.TextView;
 
-import com.android.leanlauncher.Launcher.LauncherOverlay;
 import com.android.leanlauncher.LauncherSettings.Favorites;
 import com.android.leanlauncher.compat.PackageInstallerCompat;
 import com.android.leanlauncher.compat.PackageInstallerCompat.PackageInstallInfo;
@@ -114,8 +114,6 @@ public class Workspace extends ViewGroup
     private LayoutTransition mLayoutTransition;
     private final WallpaperManager mWallpaperManager;
     private IBinder mWindowToken;
-
-    private int mDefaultPage;
 
     private ShortcutAndWidgetContainer mDragSourceInternal;
     private static boolean sAccessibilityEnabled;
@@ -191,12 +189,6 @@ public class Workspace extends ViewGroup
     private final int[] mTempXY = new int[2];
     private boolean mOverscrollEffectSet;
     public static final int DRAG_BITMAP_PADDING = 2;
-    private boolean mWorkspaceFadeInAdjacentScreens;
-
-    WallpaperOffsetInterpolator mWallpaperOffset;
-    private boolean mWallpaperIsLiveWallpaper;
-    private int mNumPagesForWallpaperParallax;
-    private float mLastSetWallpaperOffsetSteps = 0;
 
     private Runnable mDelayedResizeRunnable;
     private Runnable mDelayedSnapToPageRunnable;
@@ -250,13 +242,6 @@ public class Workspace extends ViewGroup
     private boolean mDeferDropAfterUninstall;
     private boolean mUninstallSuccessful;
 
-    // State related to Launcher Overlay
-    LauncherOverlay mLauncherOverlay;
-    boolean mScrollInteractionBegan;
-    boolean mStartedSendingScrollEvents;
-    boolean mShouldSendPageSettled;
-    int mLastOverlaySroll = 0;
-
     private final Runnable mBindPages = new Runnable() {
         @Override
         public void run() {
@@ -288,8 +273,6 @@ public class Workspace extends ViewGroup
 
         mLauncher = (Launcher) context;
         final Resources res = getResources();
-        mWorkspaceFadeInAdjacentScreens = LauncherAppState.getInstance().getDynamicGrid().
-                getDeviceProfile().shouldFadeAdjacentWorkspaceScreens();
         mWallpaperManager = WallpaperManager.getInstance(context);
 
         LauncherAppState app = LauncherAppState.getInstance();
@@ -300,7 +283,6 @@ public class Workspace extends ViewGroup
             res.getInteger(R.integer.config_workspaceSpringLoadShrinkPercentage) / 100.0f;
         mOverviewModeShrinkFactor = grid.getOverviewModeScale();
         mCameraDistance = res.getInteger(R.integer.config_cameraDistance);
-        mDefaultPage = 1;
         a.recycle();
 
         setOnHierarchyChangeListener(this);
@@ -343,7 +325,6 @@ public class Workspace extends ViewGroup
 
     public void onDragStart(final DragSource source, Object info, int dragAction) {
         mIsDragOccuring = true;
-        updateHardwareAccelarationEnabled(false);
         mLauncher.lockScreenOrientation();
         setChildrenBackgroundAlphaMultipliers(1f);
         // Prevent any Un/InstallShortcutReceivers from updating the db while we are dragging
@@ -353,7 +334,6 @@ public class Workspace extends ViewGroup
 
     public void onDragEnd() {
         mIsDragOccuring = false;
-        updateHardwareAccelarationEnabled(false);
         mLauncher.unlockScreenOrientation(false);
 
         // Re-enable any Un/InstallShortcutReceiver and now process any queued items
@@ -370,13 +350,11 @@ public class Workspace extends ViewGroup
         mIconCache = app.getIconCache();
         setWillNotDraw(false);
         setClipChildren(false);
-        setClipToPadding(false);
+        setClipToPadding(true);
         setChildrenDrawnWithCacheEnabled(true);
 
-        requestLayout(); // TODO ??
         setupLayoutTransition();
 
-        mWallpaperOffset = new WallpaperOffsetInterpolator();
         Display display = mLauncher.getWindowManager().getDefaultDisplay();
         display.getSize(mDisplaySize);
     }
@@ -441,24 +419,24 @@ public class Workspace extends ViewGroup
 
     public void addNewWorkspace() {
         // Log to disk
-        Launcher.addDumpLog(TAG, "11683562 - addNewWorkspace(): ", true);
+        Launcher.addDumpLog(TAG, "11683562 - addNewWorkspace(): " + getChildCount(), true);
 
         if (mWorkspace != null) {
-            throw new RuntimeException("Screen already exists!");
+            Launcher.addDumpLog(TAG, "Screen already exists!", true);
+            return;
         }
 
-        CellLayout newScreen = (CellLayout)
+        mWorkspace = (CellLayout)
                 mLauncher.getLayoutInflater().inflate(R.layout.workspace_screen, null);
-
-        newScreen.setOnLongClickListener(mLauncher);
-        newScreen.setOnClickListener(mLauncher);
-        newScreen.setSoundEffectsEnabled(false);
-        mWorkspace = newScreen;
+        mWorkspace.setOnLongClickListener(mLauncher);
+        mWorkspace.setOnClickListener(mLauncher);
+        mWorkspace.setSoundEffectsEnabled(false);
+		mWorkspace.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
 
         // Add an all apps Icon
         addAllAppsIcon();
 
-        addView(newScreen);
+        super.addView(mWorkspace);
     }
 
     public CellLayout getScreen() {
@@ -562,9 +540,7 @@ public class Workspace extends ViewGroup
         allAppsButton.setOnTouchListener(mLauncher.getHapticFeedbackTouchListener());
         allAppsButton.setOnClickListener(mLauncher);
         allAppsButton.setOnFocusChangeListener(mLauncher.mFocusHandler);
-        int x = 1;
-        int y = 1;
-        CellLayout.LayoutParams lp = new CellLayout.LayoutParams(x,y,1,1);
+        CellLayout.LayoutParams lp = new CellLayout.LayoutParams(mWorkspace.getCountX(), mWorkspace.getCountY()/2, 1, 1);
         lp.canReorder = false;
         mWorkspace.addViewToCellLayout(allAppsButton, -1, allAppsButton.getId(), lp, true);
     }
@@ -651,112 +627,6 @@ public class Workspace extends ViewGroup
         }
     }
 
-    class WallpaperOffsetInterpolator implements Choreographer.FrameCallback {
-        float mFinalOffset = 0.0f;
-        float mCurrentOffset = 0.5f; // to force an initial update
-        boolean mWaitingForUpdate;
-        Choreographer mChoreographer;
-        Interpolator mInterpolator;
-        boolean mAnimating;
-        long mAnimationStartTime;
-        float mAnimationStartOffset;
-        private final int ANIMATION_DURATION = 250;
-
-        public WallpaperOffsetInterpolator() {
-            mChoreographer = Choreographer.getInstance();
-            mInterpolator = new DecelerateInterpolator(1.5f);
-        }
-
-        @Override
-        public void doFrame(long frameTimeNanos) {
-            updateOffset(false);
-        }
-
-        private void updateOffset(boolean force) {
-            if (mWaitingForUpdate || force) {
-                mWaitingForUpdate = false;
-                if (computeScrollOffset() && mWindowToken != null) {
-                    try {
-                        mWallpaperManager.setWallpaperOffsets(mWindowToken,
-                                mWallpaperOffset.getCurrX(), 0.5f);
-                        setWallpaperOffsetSteps();
-                    } catch (IllegalArgumentException e) {
-                        Log.e(TAG, "Error updating wallpaper offset: " + e);
-                    }
-                }
-            }
-        }
-
-        public boolean computeScrollOffset() {
-            final float oldOffset = mCurrentOffset;
-            if (mAnimating) {
-                long durationSinceAnimation = System.currentTimeMillis() - mAnimationStartTime;
-                float t0 = durationSinceAnimation / (float) ANIMATION_DURATION;
-                float t1 = mInterpolator.getInterpolation(t0);
-                mCurrentOffset = mAnimationStartOffset +
-                        (mFinalOffset - mAnimationStartOffset) * t1;
-                mAnimating = durationSinceAnimation < ANIMATION_DURATION;
-            } else {
-                mCurrentOffset = mFinalOffset;
-            }
-
-            if (Math.abs(mCurrentOffset - mFinalOffset) > 0.0000001f) {
-                scheduleUpdate();
-            }
-            return Math.abs(oldOffset - mCurrentOffset) > 0.0000001f;
-        }
-
-        public void syncWithScroll() {
-            mWallpaperOffset.setFinalX(0);
-            updateOffset(true);
-        }
-
-        public float getCurrX() {
-            return mCurrentOffset;
-        }
-
-        public float getFinalX() {
-            return mFinalOffset;
-        }
-
-        private void animateToFinal() {
-            mAnimating = true;
-            mAnimationStartOffset = mCurrentOffset;
-            mAnimationStartTime = System.currentTimeMillis();
-        }
-
-        private void setWallpaperOffsetSteps() {
-            // Set wallpaper offset steps (1 / (number of screens - 1))
-            float xOffset = 1.0f / mNumPagesForWallpaperParallax;
-            if (xOffset != mLastSetWallpaperOffsetSteps) {
-                mWallpaperManager.setWallpaperOffsetSteps(xOffset, 1.0f);
-                mLastSetWallpaperOffsetSteps = xOffset;
-            }
-        }
-
-        public void setFinalX(float x) {
-            scheduleUpdate();
-            mFinalOffset = Math.max(0f, Math.min(x, 1.0f));
-        }
-
-        private void scheduleUpdate() {
-            if (!mWaitingForUpdate) {
-                mChoreographer.postFrameCallback(this);
-                mWaitingForUpdate = true;
-            }
-        }
-
-        public void jumpToFinal() {
-            mCurrentOffset = mFinalOffset;
-        }
-    }
-
-    @Override
-    public void computeScroll() {
-        super.computeScroll();
-        mWallpaperOffset.syncWithScroll();
-    }
-
     @Override
     public void announceForAccessibility(CharSequence text) {
         // Don't announce if apps is on top of us.
@@ -839,7 +709,6 @@ public class Workspace extends ViewGroup
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         mWindowToken = getWindowToken();
-        computeScroll();
         mDragController.setWindowToken(mWindowToken);
     }
 
@@ -850,17 +719,28 @@ public class Workspace extends ViewGroup
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        Log.d(TAG, "OnLayout> " + getChildCount());
+        if (getChildCount() == 0) {
+            return;
+        }
+
+        int offsetX = mWorkspace.getMeasuredWidth();
+        int offsetY = mWorkspace.getMeasuredHeight();
+
+        // Update the viewport offsets
+        mViewPort.offset(offsetX,  offsetY);
+
+        final View child = getChildAt(0);
+        if (child.getVisibility() != View.GONE) {
+            child.layout(0, 0,
+                     child.getMeasuredWidth(), child.getMeasuredHeight());
+        }
     }
 
     protected void onResume() {
         AccessibilityManager am = (AccessibilityManager)
                 getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
         sAccessibilityEnabled = am.isEnabled();
-
-        mWallpaperIsLiveWallpaper = mWallpaperManager.getWallpaperInfo() != null;
-        // Force the wallpaper offset steps to be set again, because another app might have changed
-        // them
-        mLastSetWallpaperOffsetSteps = 0f;
     }
 
     @Override
@@ -893,9 +773,6 @@ public class Workspace extends ViewGroup
 
     public boolean workspaceInModalState() {
         return mState != State.NORMAL;
-    }
-
-    private void updateHardwareAccelarationEnabled(boolean force) {
     }
 
     public void buildPageHardwareLayers() {
@@ -1085,9 +962,55 @@ public class Workspace extends ViewGroup
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        mViewPort = new Rect();
-        mViewPort.set(0, 0, MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+        if (getChildCount() == 0) {
+            return;
+        }
+
+        // We measure the dimensions of the PagedView to be larger than the pages so that when we
+        // zoom out (and scale down), the view is still contained in the parent
+        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+        int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+        int heightSize = MeasureSpec.getSize(heightMeasureSpec);
+
+        if (widthMode == MeasureSpec.UNSPECIFIED || heightMode == MeasureSpec.UNSPECIFIED) {
+            return;
+        }
+
+        // Return early if we aren't given a proper dimension
+        if (widthSize <= 0 || heightSize <= 0) {
+            return;
+        }
+
+        mViewPort = new Rect();
+        mViewPort.set(0, 0, widthSize, heightSize);
+
+        /* Allow the height to be set as WRAP_CONTENT. This allows the particular case
+         * of the All apps view on XLarge displays to not take up more space then it needs. Width
+         * is still not allowed to be set as WRAP_CONTENT since many parts of the code expect
+         * each page to have the same width.
+         */
+        final int verticalPadding = getPaddingTop() + getPaddingBottom();
+        final int horizontalPadding = getPaddingLeft() + getPaddingRight();
+
+        // The children are given the same width and height as the workspace
+        // unless they were set to WRAP_CONTENT
+        Log.d(TAG, "Workspace.onMeasure(): " + widthSize + ", " + heightSize);
+        Log.d(TAG, "Workspace.horizontalPadding: " + horizontalPadding);
+        Log.d(TAG, "Workspace.verticalPadding: " + verticalPadding);
+
+        // disallowing padding in paged view (just pass 0)
+        final View child = getChildAt(0);
+        if (child.getVisibility() != GONE) {
+            final int childWidthMeasureSpec =
+                    MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY);
+            final int childHeightMeasureSpec =
+                    MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY);
+            child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
+        }
+        setMeasuredDimension(widthSize, heightSize);
     }
 
     int getOverviewModeTranslationY() {
@@ -1368,13 +1291,10 @@ public class Workspace extends ViewGroup
 
         // Invalidate here to ensure that the pages are rendered during the state change transition.
         invalidate();
-
-        updateHardwareAccelarationEnabled(false);
     }
 
     private void onTransitionEnd() {
         mIsSwitchingState = false;
-        updateHardwareAccelarationEnabled(false);
     }
 
     @Override
@@ -1794,7 +1714,6 @@ public class Workspace extends ViewGroup
                 @Override
                 public void run() {
                     mAnimatingViewIntoPlace = false;
-                    updateHardwareAccelarationEnabled(false);
                     if (finalResizeRunnable != null) {
                         finalResizeRunnable.run();
                     }
@@ -1951,23 +1870,6 @@ public class Workspace extends ViewGroup
    void mapPointFromSelfToChild(View v, float[] xy, Matrix cachedInverseMatrix) {
        xy[0] = xy[0] - v.getLeft();
        xy[1] = xy[1] - v.getTop();
-   }
-
-   boolean isPointInSelfOverHotseat(int x, int y, Rect r) {
-       if (r == null) {
-           r = new Rect();
-       }
-       mTempPt[0] = x;
-       mTempPt[1] = y;
-       mLauncher.getDragLayer().getDescendantCoordRelativeToSelf(this, mTempPt, true);
-
-       LauncherAppState app = LauncherAppState.getInstance();
-       DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
-       r = grid.getHotseatRect();
-       if (r.contains(mTempPt[0], mTempPt[1])) {
-           return true;
-       }
-       return false;
    }
 
    /*
@@ -2492,10 +2394,6 @@ public class Workspace extends ViewGroup
     void setup(DragController dragController) {
         mSpringLoadedDragController = new SpringLoadedDragController(mLauncher);
         mDragController = dragController;
-
-        // hardware layers on children are enabled on startup, but should be disabled until
-        // needed
-        updateHardwareAccelarationEnabled(false);
     }
 
     /**

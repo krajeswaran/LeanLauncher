@@ -332,7 +332,7 @@ public class FocusHelper {
         final CellLayout layout = (CellLayout) parent.getParent();
         final Workspace workspace = (Workspace) layout.getParent();
         final ViewGroup launcher = (ViewGroup) workspace.getParent();
-        final ViewGroup tabs = (ViewGroup) launcher.findViewById(R.id.search_drop_target_bar);
+        final ViewGroup tabs = (ViewGroup) launcher.findViewById(R.id.delete_drop_target_bar);
         int pageIndex = workspace.indexOfChild(layout);
         int pageCount = workspace.getChildCount();
 

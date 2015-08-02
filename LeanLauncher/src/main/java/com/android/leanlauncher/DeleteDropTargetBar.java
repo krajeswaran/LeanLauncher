@@ -120,6 +120,7 @@ public class DeleteDropTargetBar extends FrameLayout implements DragController.D
     }
 
     public void finishAnimations() {
+		mDropTargetBar.setVisibility(VISIBLE);
         prepareStartAnimation(mDropTargetBar);
         mDropTargetBarAnim.reverse();
     }
@@ -140,6 +141,7 @@ public class DeleteDropTargetBar extends FrameLayout implements DragController.D
     @Override
     public void onDragStart(DragSource source, Object info, int dragAction) {
         // Animate out the QSB search bar, and animate in the drop target bar
+		mDropTargetBar.setVisibility(VISIBLE);
         prepareStartAnimation(mDropTargetBar);
         mDropTargetBarAnim.start();
     }
@@ -154,6 +156,7 @@ public class DeleteDropTargetBar extends FrameLayout implements DragController.D
             // Restore the QSB search bar, and animate out the drop target bar
             prepareStartAnimation(mDropTargetBar);
             mDropTargetBarAnim.reverse();
+			mDropTargetBar.setVisibility(GONE);
         } else {
             mDeferOnDragEnd = false;
         }
