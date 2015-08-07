@@ -27,7 +27,7 @@ import java.util.ArrayList;
 
 public class Stats {
     private static final boolean DEBUG_BROADCASTS = false;
-    private static final String TAG = "Launcher3/Stats";
+    private static final String TAG = "Stats";
 
     private static final boolean LOCAL_LAUNCH_LOG = true;
 

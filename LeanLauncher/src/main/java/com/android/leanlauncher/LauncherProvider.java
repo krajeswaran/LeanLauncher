@@ -42,7 +42,6 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.android.leanlauncher.AutoInstallsLayout.LayoutParserCallback;
 import com.android.leanlauncher.LauncherSettings.Favorites;
 import com.android.leanlauncher.compat.UserHandleCompat;
 import com.android.leanlauncher.compat.UserManagerCompat;
@@ -149,10 +148,9 @@ public class LauncherProvider extends ContentProvider {
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         db.beginTransaction();
         try {
-            int numValues = values.length;
-            for (int i = 0; i < numValues; i++) {
-                addModifiedTime(values[i]);
-                if (dbInsertAndCheck(mOpenHelper, db, args.table, null, values[i]) < 0) {
+            for (ContentValues value : values) {
+                addModifiedTime(value);
+                if (dbInsertAndCheck(mOpenHelper, db, args.table, null, value) < 0) {
                     return 0;
                 }
             }
@@ -221,16 +219,6 @@ public class LauncherProvider extends ContentProvider {
         mOpenHelper.updateMaxItemId(id);
     }
 
-    public long generateNewScreenId() {
-        return mOpenHelper.generateNewScreenId();
-    }
-
-    // This is only required one time while loading the workspace during the
-    // upgrade path, and should never be called from anywhere else.
-    public void updateMaxScreenId(long maxScreenId) {
-        mOpenHelper.updateMaxScreenId(maxScreenId);
-    }
-
     /**
      * Clears all the data for a fresh start.
      */
@@ -258,30 +246,10 @@ public class LauncherProvider extends ContentProvider {
         if (sp.getBoolean(EMPTY_DATABASE_CREATED, false)) {
             Log.d(TAG, "loading default workspace");
 
-            AutoInstallsLayout loader = AutoInstallsLayout.get(getContext(),
-                    mOpenHelper.mAppWidgetHost, mOpenHelper);
-
-            final boolean usingExternallyProvidedLayout = loader != null;
-            if (loader == null) {
-                loader = getDefaultLayoutParser();
-            }
-            // Populate favorites table with initial favorites
-            if ((mOpenHelper.loadFavorites(mOpenHelper.getWritableDatabase(), loader) <= 0)
-                    && usingExternallyProvidedLayout) {
-                // Unable to load external layout. Cleanup and load the internal layout.
-                createEmptyDB();
-                mOpenHelper.loadFavorites(mOpenHelper.getWritableDatabase(),
-                        getDefaultLayoutParser());
-            }
+            createEmptyDB();
+            mOpenHelper.loadFavorites(mOpenHelper.getWritableDatabase());
             clearFlagEmptyDbCreated();
         }
-    }
-
-    private DefaultLayoutParser getDefaultLayoutParser() {
-        int defaultLayout = LauncherAppState.getInstance()
-                .getDynamicGrid().getDeviceProfile().defaultLayoutId;
-        return new DefaultLayoutParser(getContext(), mOpenHelper.mAppWidgetHost,
-                mOpenHelper, getContext().getResources(), defaultLayout);
     }
 
     private static interface ContentValuesCallback {
@@ -299,7 +267,7 @@ public class LauncherProvider extends ContentProvider {
         mOpenHelper = new DatabaseHelper(getContext());
     }
 
-    private static class DatabaseHelper extends SQLiteOpenHelper implements LayoutParserCallback {
+    private static class DatabaseHelper extends SQLiteOpenHelper {
         private final Context mContext;
         private final AppWidgetHost mAppWidgetHost;
         private long mMaxItemId = -1;
@@ -318,7 +286,7 @@ public class LauncherProvider extends ContentProvider {
                 mMaxItemId = initializeMaxItemId(getWritableDatabase());
             }
             if (mMaxScreenId == -1) {
-                mMaxScreenId = initializeMaxScreenId(getWritableDatabase());
+                mMaxScreenId = 0;
             }
         }
 
@@ -450,85 +418,6 @@ public class LauncherProvider extends ContentProvider {
             return true;
         }
 
-        private boolean updateContactsShortcuts(SQLiteDatabase db) {
-            final String selectWhere = buildOrWhereString(Favorites.ITEM_TYPE,
-                    new int[] { Favorites.ITEM_TYPE_SHORTCUT });
-
-            Cursor c = null;
-            final String actionQuickContact = "com.android.contacts.action.QUICK_CONTACT";
-            db.beginTransaction();
-            try {
-                // Select and iterate through each matching widget
-                c = db.query(TABLE_FAVORITES,
-                        new String[]{Favorites._ID, Favorites.INTENT},
-                        selectWhere, null, null, null, null);
-                if (c == null) return false;
-
-                if (LOGD) Log.d(TAG, "found upgrade cursor count=" + c.getCount());
-
-                final int idIndex = c.getColumnIndex(Favorites._ID);
-                final int intentIndex = c.getColumnIndex(Favorites.INTENT);
-
-                while (c.moveToNext()) {
-                    long favoriteId = c.getLong(idIndex);
-                    final String intentUri = c.getString(intentIndex);
-                    if (intentUri != null) {
-                        try {
-                            final Intent intent = Intent.parseUri(intentUri, 0);
-                            android.util.Log.d("Home", intent.toString());
-                            final Uri uri = intent.getData();
-                            if (uri != null) {
-                                final String data = uri.toString();
-                                if ((Intent.ACTION_VIEW.equals(intent.getAction()) ||
-                                        actionQuickContact.equals(intent.getAction())) &&
-                                        (data.startsWith("content://contacts/people/") ||
-                                        data.startsWith("content://com.android.contacts/" +
-                                                "contacts/lookup/"))) {
-
-                                    final Intent newIntent = new Intent(actionQuickContact);
-                                    // When starting from the launcher, start in a new, cleared task
-                                    // CLEAR_WHEN_TASK_RESET cannot reset the root of a task, so we
-                                    // clear the whole thing preemptively here since
-                                    // QuickContactActivity will finish itself when launching other
-                                    // detail activities.
-                                    newIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-                                            Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                    newIntent.putExtra(
-                                            Launcher.INTENT_EXTRA_IGNORE_LAUNCH_ANIMATION, true);
-                                    newIntent.setData(uri);
-                                    // Determine the type and also put that in the shortcut
-                                    // (that can speed up launch a bit)
-                                    newIntent.setDataAndType(uri, newIntent.resolveType(mContext));
-
-                                    final ContentValues values = new ContentValues();
-                                    values.put(LauncherSettings.Favorites.INTENT,
-                                            newIntent.toUri(0));
-
-                                    String updateWhere = Favorites._ID + "=" + favoriteId;
-                                    db.update(TABLE_FAVORITES, values, updateWhere, null);
-                                }
-                            }
-                        } catch (RuntimeException ex) {
-                            Log.e(TAG, "Problem upgrading shortcut", ex);
-                        } catch (URISyntaxException e) {
-                            Log.e(TAG, "Problem upgrading shortcut", e);
-                        }
-                    }
-                }
-
-                db.setTransactionSuccessful();
-            } catch (SQLException ex) {
-                Log.w(TAG, "Problem while upgrading contacts", ex);
-                return false;
-            } finally {
-                db.endTransaction();
-                if (c != null) {
-                    c.close();
-                }
-            }
-
-            return true;
-        }
 
         private void normalizeIcons(SQLiteDatabase db) {
             Log.d(TAG, "normalizing icons");
@@ -591,18 +480,12 @@ public class LauncherProvider extends ContentProvider {
         // constructor from the worker thread; however, this doesn't extend until after the
         // constructor is called, and we only pass a reference to LauncherProvider to LauncherApp
         // after that point
-        @Override
         public long generateNewItemId() {
             if (mMaxItemId < 0) {
                 throw new RuntimeException("Error: max item id was not initialized");
             }
             mMaxItemId += 1;
             return mMaxItemId;
-        }
-
-        @Override
-        public long insertAndCheck(SQLiteDatabase db, ContentValues values) {
-            return dbInsertAndCheck(this, db, TABLE_FAVORITES, null, values);
         }
 
         public void updateMaxItemId(long id) {
@@ -638,168 +521,19 @@ public class LauncherProvider extends ContentProvider {
             return id;
         }
 
-        // Generates a new ID to use for an workspace screen in your database. This method
-        // should be only called from the main UI thread. As an exception, we do call it when we
-        // call the constructor from the worker thread; however, this doesn't extend until after the
-        // constructor is called, and we only pass a reference to LauncherProvider to LauncherApp
-        // after that point
-        public long generateNewScreenId() {
-            if (mMaxScreenId < 0) {
-                throw new RuntimeException("Error: max screen id was not initialized");
-            }
-            mMaxScreenId += 1;
-            // Log to disk
-            Launcher.addDumpLog(TAG, "11683562 - generateNewScreenId(): " + mMaxScreenId, true);
-            return mMaxScreenId;
-        }
-
-        public void updateMaxScreenId(long maxScreenId) {
-            // Log to disk
-            Launcher.addDumpLog(TAG, "11683562 - updateMaxScreenId(): " + maxScreenId, true);
-            mMaxScreenId = maxScreenId;
-        }
-
-        private long initializeMaxScreenId(SQLiteDatabase db) {
-            Cursor c = db.rawQuery("SELECT MAX(" + LauncherSettings.Workspace._ID + ") FROM " + TABLE_WORKSPACE, null);
-
-            // get the result
-            final int maxIdIndex = 0;
-            long id = -1;
-            if (c != null && c.moveToNext()) {
-                id = c.getLong(maxIdIndex);
-            }
-            if (c != null) {
-                c.close();
-            }
-
-            if (id == -1) {
-                throw new RuntimeException("Error: could not query max screen id");
-            }
-
-            // Log to disk
-            Launcher.addDumpLog(TAG, "11683562 - initializeMaxScreenId(): " + id, true);
-            return id;
-        }
-
-        /**
-         * Upgrade existing clock and photo frame widgets into their new widget
-         * equivalents.
-         */
-        private void convertWidgets(SQLiteDatabase db) {
-            final AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(mContext);
-            final int[] bindSources = new int[] {
-                    Favorites.ITEM_TYPE_WIDGET_CLOCK,
-                    Favorites.ITEM_TYPE_WIDGET_PHOTO_FRAME,
-                    Favorites.ITEM_TYPE_WIDGET_SEARCH,
-            };
-
-            final String selectWhere = buildOrWhereString(Favorites.ITEM_TYPE, bindSources);
-
-            Cursor c = null;
-
-            db.beginTransaction();
-            try {
-                // Select and iterate through each matching widget
-                c = db.query(TABLE_FAVORITES, new String[] { Favorites._ID, Favorites.ITEM_TYPE },
-                        selectWhere, null, null, null, null);
-
-                if (LOGD) Log.d(TAG, "found upgrade cursor count=" + c.getCount());
-
-                final ContentValues values = new ContentValues();
-                while (c != null && c.moveToNext()) {
-                    long favoriteId = c.getLong(0);
-                    int favoriteType = c.getInt(1);
-
-                    // Allocate and update database with new appWidgetId
-                    try {
-                        int appWidgetId = mAppWidgetHost.allocateAppWidgetId();
-
-                        if (LOGD) {
-                            Log.d(TAG, "allocated appWidgetId=" + appWidgetId
-                                    + " for favoriteId=" + favoriteId);
-                        }
-                        values.clear();
-                        values.put(Favorites.ITEM_TYPE, Favorites.ITEM_TYPE_APPWIDGET);
-                        values.put(Favorites.APPWIDGET_ID, appWidgetId);
-
-                        // Original widgets might not have valid spans when upgrading
-                        if (favoriteType == Favorites.ITEM_TYPE_WIDGET_SEARCH) {
-                            values.put(LauncherSettings.Favorites.SPANX, 4);
-                            values.put(LauncherSettings.Favorites.SPANY, 1);
-                        } else {
-                            values.put(LauncherSettings.Favorites.SPANX, 2);
-                            values.put(LauncherSettings.Favorites.SPANY, 2);
-                        }
-
-                        String updateWhere = Favorites._ID + "=" + favoriteId;
-                        db.update(TABLE_FAVORITES, values, updateWhere, null);
-
-                        if (favoriteType == Favorites.ITEM_TYPE_WIDGET_CLOCK) {
-                            // TODO: check return value
-                            appWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId,
-                                    new ComponentName("com.android.alarmclock",
-                                    "com.android.alarmclock.AnalogAppWidgetProvider"));
-                        } else if (favoriteType == Favorites.ITEM_TYPE_WIDGET_PHOTO_FRAME) {
-                            // TODO: check return value
-                            appWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId,
-                                    new ComponentName("com.android.camera",
-                                    "com.android.camera.PhotoAppWidgetProvider"));
-                        } else if (favoriteType == Favorites.ITEM_TYPE_WIDGET_SEARCH) {
-                            // TODO: check return value
-                            appWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId,
-                                    getSearchWidgetProvider());
-                        }
-                    } catch (RuntimeException ex) {
-                        Log.e(TAG, "Problem allocating appWidgetId", ex);
-                    }
-                }
-
-                db.setTransactionSuccessful();
-            } catch (SQLException ex) {
-                Log.w(TAG, "Problem while allocating appWidgetIds for existing widgets", ex);
-            } finally {
-                db.endTransaction();
-                if (c != null) {
-                    c.close();
-                }
-            }
-
-            // Update max item id
-            mMaxItemId = initializeMaxItemId(db);
-            if (LOGD) Log.d(TAG, "mMaxItemId: " + mMaxItemId);
-        }
-
-        private int loadFavorites(SQLiteDatabase db, AutoInstallsLayout loader) {
-            ArrayList<Long> screenIds = new ArrayList<Long>();
-            // TODO: Use multiple loaders with fall-back and transaction.
-            int count = loader.loadLayout(db, screenIds);
-
-            // Add the screens specified by the items above
-            Collections.sort(screenIds);
-            int rank = 0;
+        private void loadFavorites(SQLiteDatabase db) {
             ContentValues values = new ContentValues();
-            for (Long id : screenIds) {
-                values.clear();
-                values.put(LauncherSettings.Workspace._ID, id);
-                if (dbInsertAndCheck(this, db, TABLE_WORKSPACE, null, values) < 0) {
-                    throw new RuntimeException("Failed initialize screen table"
-                            + "from default layout");
-                }
-                rank++;
+            values.clear();
+            values.put(LauncherSettings.Workspace._ID, 0);
+            if (dbInsertAndCheck(this, db, TABLE_WORKSPACE, null, values) < 0) {
+                throw new RuntimeException("Failed initialize screen table"
+                        + "from default layout");
             }
 
             // Ensure that the max ids are initialized
             mMaxItemId = initializeMaxItemId(db);
-            mMaxScreenId = initializeMaxScreenId(db);
-
-            return count;
+            mMaxScreenId = 0;
         }
-
-        private ComponentName getSearchWidgetProvider() {
-            AppWidgetProviderInfo searchProvider = Utilities.getSearchWidgetProvider(mContext);
-            return (searchProvider == null) ? null : searchProvider.provider;
-        }
-
     }
 
     /**

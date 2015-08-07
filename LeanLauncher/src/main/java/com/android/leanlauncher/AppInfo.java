@@ -34,8 +34,6 @@ import java.util.HashMap;
  * Represents an app in AllAppsView.
  */
 public class AppInfo extends ItemInfo {
-    private static final String TAG = "Launcher3.AppInfo";
-
     /**
      * The intent used to start the application.
      */

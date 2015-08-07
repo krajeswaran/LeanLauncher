@@ -509,6 +509,7 @@ public class CellLayout extends ViewGroup {
             child.setId(childId);
 
             mShortcutsAndWidgets.addView(child, index, params);
+            mShortcutsAndWidgets.setTag(child);
 
             if (markCells) markCellsAsOccupiedForView(child);
 
@@ -1915,9 +1916,7 @@ public class CellLayout extends ViewGroup {
 
     private void copyOccupiedArray(boolean[][] occupied) {
         for (int i = 0; i < mCountX; i++) {
-            for (int j = 0; j < mCountY; j++) {
-                occupied[i][j] = mOccupied[i][j];
-            }
+            System.arraycopy(mOccupied[i], 0, occupied[i], 0, mCountY);
         }
     }
 
@@ -2185,9 +2184,7 @@ public class CellLayout extends ViewGroup {
 
     private void commitTempPlacement() {
         for (int i = 0; i < mCountX; i++) {
-            for (int j = 0; j < mCountY; j++) {
-                mOccupied[i][j] = mTmpOccupied[i][j];
-            }
+            System.arraycopy(mTmpOccupied[i], 0, mOccupied[i], 0, mCountY);
         }
         int childCount = mShortcutsAndWidgets.getChildCount();
         for (int i = 0; i < childCount; i++) {

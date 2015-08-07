@@ -17,7 +17,6 @@
 <!-- Full screen view projects under the status bar and contains the background -->
 <com.android.leanlauncher.LauncherRootView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:launcher="http://schemas.android.com/apk/res-auto"
 
     android:id="@+id/launcher"
     android:layout_width="match_parent"
@@ -55,11 +54,4 @@
             android:layout_height="match_parent"
             android:visibility="invisible" />
     </com.android.leanlauncher.DragLayer>
-
-    <ViewStub
-        android:id="@+id/launcher_overlay_stub"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:inflatedId="@+id/launcher_overlay"
-        android:layout="@layout/launcher_overlay" />
 </com.android.leanlauncher.LauncherRootView>

@@ -74,8 +74,6 @@ public class DeviceProfile {
     private float iconTextSize;
     private int iconDrawablePaddingOriginalPx;
 
-    int defaultLayoutId;
-
     boolean isLandscape;
     boolean isTablet;
     boolean isLargeTablet;
@@ -124,7 +122,7 @@ public class DeviceProfile {
     private ArrayList<DeviceProfileCallbacks> mCallbacks = new ArrayList<DeviceProfileCallbacks>();
 
     DeviceProfile(String n, float w, float h, float r, float c,
-                  float is, float its, int dlId) {
+                  float is, float its) {
         // Ensure that we have an odd number of items (since we need to place all apps)
 
         name = n;
@@ -134,7 +132,6 @@ public class DeviceProfile {
         numColumns = c;
         iconSize = is;
         iconTextSize = its;
-        defaultLayoutId = dlId;
     }
 
     DeviceProfile() {
@@ -187,9 +184,6 @@ public class DeviceProfile {
 
         // Snap to the closest column count
         numColumns = closestProfile.numColumns;
-
-        // Snap to the closest default layout id
-        defaultLayoutId = closestProfile.defaultLayoutId;
 
         // Interpolate the icon size
         points.clear();
@@ -293,8 +287,8 @@ public class DeviceProfile {
         if (usedHeight > maxHeight) {
             scale = maxHeight / usedHeight;
             drawablePadding = 0;
+            updateIconSize(scale, drawablePadding, resources, dm);
         }
-        updateIconSize(scale, drawablePadding, resources, dm);
 
         // Make the callbacks
         for (DeviceProfileCallbacks cb : mCallbacks) {
@@ -354,11 +348,7 @@ public class DeviceProfile {
         isLandscape = (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE);
         isTablet = resources.getBoolean(R.bool.is_tablet);
         isLargeTablet = resources.getBoolean(R.bool.is_large_tablet);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            isLayoutRtl = (configuration.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL);
-        } else {
-            isLayoutRtl = false;
-        }
+        isLayoutRtl = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 && (configuration.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL);
         widthPx = wPx;
         heightPx = hPx;
         availableWidthPx = awPx;
@@ -393,14 +383,13 @@ public class DeviceProfile {
         final PointF xy = new PointF(width, height);
 
         // Sort the profiles by their closeness to the dimensions
-        ArrayList<DeviceProfileQuery> pointsByNearness = points;
-        Collections.sort(pointsByNearness, new Comparator<DeviceProfileQuery>() {
+        Collections.sort(points, new Comparator<DeviceProfileQuery>() {
             public int compare(DeviceProfileQuery a, DeviceProfileQuery b) {
                 return (int) (dist(xy, a.dimens) - dist(xy, b.dimens));
             }
         });
 
-        return pointsByNearness;
+        return points;
     }
 
     private float invDistWeightedInterpolate(float width, float height,
@@ -490,19 +479,11 @@ public class DeviceProfile {
         return getWorkspacePadding(isLandscape ? CellLayout.LANDSCAPE : CellLayout.PORTRAIT);
     }
     Rect getWorkspacePadding(int orientation) {
-//        Rect searchBarBounds = getSearchBarBounds(orientation);
         Rect padding = new Rect();
         if (orientation == CellLayout.LANDSCAPE &&
                 transposeLayoutWithOrientation) {
-            // Pad the left and right of the workspace with search/hotseat bar sizes
-            if (isLayoutRtl) {
-                // TODO revisit 0
-                padding.set(0, edgeMarginPx,
-                        0, edgeMarginPx);
-            } else {
-                padding.set(0, edgeMarginPx,
-                        0, edgeMarginPx);
-            }
+            padding.set(0, edgeMarginPx,
+                    0, edgeMarginPx);
         } else {
             if (isTablet()) {
                 // Pad the left and right of the workspace to ensure consistent spacing
@@ -527,23 +508,10 @@ public class DeviceProfile {
                 padding.set(desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.left,
                         0,
                         desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.right,
-                        pageIndicatorHeightPx);
+                        0);
             }
         }
         return padding;
-    }
-
-    int getWorkspacePageSpacing(int orientation) {
-        if ((orientation == CellLayout.LANDSCAPE &&
-                transposeLayoutWithOrientation) || isLargeTablet()) {
-            // In landscape mode the page spacing is set to the default.
-            return defaultPageSpacingPx;
-        } else {
-            // In portrait, we want the pages spaced such that there is no
-            // overhang of the previous / next page into the current page viewport.
-            // We assume symmetrical padding in portrait mode.
-            return Math.max(defaultPageSpacingPx, 2 * getWorkspacePadding().left);
-        }
     }
 
     Rect getOverviewModeButtonBarRect() {
@@ -581,10 +549,6 @@ public class DeviceProfile {
         return isLandscape && transposeLayoutWithOrientation;
     }
 
-    boolean shouldFadeAdjacentWorkspaceScreens() {
-        return isVerticalBarLayout() || isLargeTablet();
-    }
-
     int getVisibleChildCount(ViewGroup parent) {
         int visibleChildren = 0;
         for (int i = 0; i < parent.getChildCount(); i++) {
@@ -605,7 +569,7 @@ public class DeviceProfile {
         lp = (FrameLayout.LayoutParams) deleteDropTargetBar.getLayoutParams();
         if (hasVerticalBarLayout) {
             // Vertical search bar space
-            lp.gravity = Gravity.TOP | Gravity.LEFT;
+            lp.gravity = Gravity.BOTTOM | Gravity.LEFT;
             lp.width = searchBarSpaceHeightPx;
             lp.height = LayoutParams.WRAP_CONTENT;
 
@@ -613,7 +577,7 @@ public class DeviceProfile {
             targets.setOrientation(LinearLayout.VERTICAL);
         } else {
             // Horizontal search bar space
-            lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+            lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
             lp.width = searchBarSpaceWidthPx;
             lp.height = searchBarSpaceHeightPx;
         }

@@ -21,6 +21,7 @@ import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -31,6 +32,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.UserManager;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -203,7 +205,7 @@ public class DeleteDropTarget extends ButtonDropTarget {
 
         mActive = isVisible;
         resetHoverColor();
-        ((ViewGroup) getParent()).setVisibility(isVisible ? View.VISIBLE : View.GONE);
+        mDeleteDropTargetBar.setVisibility(isVisible ? View.VISIBLE : View.GONE);
         if (isVisible && getText().length() > 0) {
             setText(useUninstallLabel ? R.string.delete_target_uninstall_label
                 : R.string.delete_target_label);
@@ -272,12 +274,25 @@ public class DeleteDropTarget extends ButtonDropTarget {
     }
 
     private boolean isUninstallFromWorkspace(DragObject d) {
-        if (LauncherAppState.isDisableAllApps() && isWorkspaceOrFolderApplication(d)) {
-            ShortcutInfo shortcut = (ShortcutInfo) d.dragInfo;
-            // Only allow manifest shortcuts to initiate an un-install.
-            return !InstallShortcutReceiver.isValidShortcutLaunchIntent(shortcut.intent);
+        Intent intent = null;
+        if (d.dragInfo instanceof ShortcutInfo) {
+            intent = ((ShortcutInfo) d.dragInfo).intent;
+        } else if (d.dragInfo instanceof AppInfo) {
+            intent = ((AppInfo) d.dragInfo).intent;
         }
-        return false;
+
+        return intent != null && !isValidShortcutLaunchIntent(intent);
+    }
+
+    private boolean isValidShortcutLaunchIntent(Intent launchIntent) {
+        return !(launchIntent != null
+                && Intent.ACTION_MAIN.equals(launchIntent.getAction())
+                && launchIntent.getComponent() != null
+                && launchIntent.getCategories() != null
+                && launchIntent.getCategories().size() == 1
+                && launchIntent.hasCategory(Intent.CATEGORY_LAUNCHER)
+                && launchIntent.getExtras() == null
+                && TextUtils.isEmpty(launchIntent.getDataString()));
     }
 
     private void completeDrop(DragObject d) {
@@ -381,7 +396,7 @@ public class DeleteDropTarget extends ButtonDropTarget {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 final DragView dragView = (DragView) dragLayer.getAnimatedView();
-                float t = ((Float) animation.getAnimatedValue()).floatValue();
+                float t = (Float) animation.getAnimatedValue();
                 float tp = scaleAlphaInterpolator.getInterpolation(t);
                 float initialScale = dragView.getInitialScale();
                 float finalAlpha = 0.5f;
@@ -429,7 +444,7 @@ public class DeleteDropTarget extends ButtonDropTarget {
         @Override
         public void onAnimationUpdate(ValueAnimator animation) {
             final DragView dragView = (DragView) mDragLayer.getAnimatedView();
-            float t = ((Float) animation.getAnimatedValue()).floatValue();
+            float t = (Float) animation.getAnimatedValue();
             long curTime = AnimationUtils.currentAnimationTimeMillis();
 
             if (!mHasOffsetForScale) {

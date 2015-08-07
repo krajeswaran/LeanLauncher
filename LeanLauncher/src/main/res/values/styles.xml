@@ -30,11 +30,12 @@
         <item name="android:shadowRadius">2.0</item>
         <item name="android:shadowColor">#B0000000</item>
         <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:drawablePadding">0dp</item>
     </style>
 
-    <style name="WorkspaceIcon.Portrait"></style>
+    <style name="WorkspaceIcon.Portrait"/>
 
-    <style name="WorkspaceIcon.Landscape"></style>
+    <style name="WorkspaceIcon.Landscape"/>
 
     <style name="WorkspaceIcon.AppsCustomize">
         <item name="android:background">@null</item>
@@ -42,8 +43,6 @@
         <item name="android:drawablePadding">@dimen/dynamic_grid_icon_drawable_padding</item>
         <item name="android:shadowRadius">0</item>
     </style>
-
-    <style name="SearchButton"></style>
 
     <style name="DropTargetButtonContainer">
         <item name="android:layout_width">0dp</item>
@@ -68,7 +67,7 @@
         <item name="android:shadowRadius">4.0</item>
     </style>
 
-    <style name="DropTargetButton" parent="DropTargetButton.Base"></style>
+    <style name="DropTargetButton" parent="DropTargetButton.Base"/>
 
     <style name="PreloadIcon">
         <item name="background">@drawable/virtual_preload</item>

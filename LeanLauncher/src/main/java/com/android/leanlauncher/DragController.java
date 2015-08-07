@@ -49,22 +49,14 @@ public class DragController {
     /** Indicates the drag is a copy.  */
     public static int DRAG_ACTION_COPY = 1;
 
-    private static final int SCROLL_DELAY = 500;
-    private static final int RESCROLL_DELAY = PagedView.PAGE_SNAP_ANIMATION_DURATION + 150;
-
     private static final boolean PROFILE_DRAWING_DURING_DRAG = false;
 
     private static final int SCROLL_OUTSIDE_ZONE = 0;
     private static final int SCROLL_WAITING_IN_ZONE = 1;
 
-    static final int SCROLL_NONE = -1;
-    static final int SCROLL_LEFT = 0;
-    static final int SCROLL_RIGHT = 1;
-
     private static final float MAX_FLING_DEGREES = 35f;
 
     private Launcher mLauncher;
-    private Handler mHandler;
 
     // temporaries to avoid gc thrash
     private Rect mRectTemp = new Rect();
@@ -99,9 +91,7 @@ public class DragController {
 
     private View mMoveTarget;
 
-    private DragScroller mDragScroller;
     private int mScrollState = SCROLL_OUTSIDE_ZONE;
-    private ScrollRunnable mScrollRunnable = new ScrollRunnable();
 
     private DropTarget mLastDropTarget;
 
@@ -143,7 +133,6 @@ public class DragController {
     public DragController(Launcher launcher) {
         Resources r = launcher.getResources();
         mLauncher = launcher;
-        mHandler = new Handler();
         mScrollZone = r.getDimensionPixelSize(R.dimen.scroll_zone);
         mVelocityTracker = VelocityTracker.obtain();
 
@@ -346,7 +335,6 @@ public class DragController {
     private void endDrag() {
         if (mDragging) {
             mDragging = false;
-            clearScrollRunnable();
             boolean isDeferred = false;
             if (mDragObject.dragView != null) {
                 isDeferred = mDragObject.deferDragViewCleanupPostAnimation;
@@ -469,16 +457,6 @@ public class DragController {
         return mMoveTarget != null && mMoveTarget.dispatchUnhandledMove(focused, direction);
     }
 
-    private void clearScrollRunnable() {
-        mHandler.removeCallbacks(mScrollRunnable);
-        if (mScrollState == SCROLL_WAITING_IN_ZONE) {
-            mScrollState = SCROLL_OUTSIDE_ZONE;
-            mScrollRunnable.setDirection(SCROLL_RIGHT);
-            if (mDragScroller != null) mDragScroller.onExitScrollArea();
-            mLauncher.getDragLayer().onExitScrollArea();
-        }
-    }
-
     private void handleMoveEvent(int x, int y) {
         mDragObject.dragView.move(x, y);
 
@@ -524,32 +502,17 @@ public class DragController {
 
     private void checkScrollState(int x, int y) {
         final int slop = ViewConfiguration.get(mLauncher).getScaledWindowTouchSlop();
-        final int delay = mDistanceSinceScroll < slop ? RESCROLL_DELAY : SCROLL_DELAY;
         final DragLayer dragLayer = mLauncher.getDragLayer();
         final boolean isRtl = (dragLayer.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL);
-        final int forwardDirection = isRtl ? SCROLL_RIGHT : SCROLL_LEFT;
-        final int backwardsDirection = isRtl ? SCROLL_LEFT : SCROLL_RIGHT;
 
         if (x < mScrollZone) {
             if (mScrollState == SCROLL_OUTSIDE_ZONE) {
                 mScrollState = SCROLL_WAITING_IN_ZONE;
-                if (mDragScroller.onEnterScrollArea(x, y, forwardDirection)) {
-                    dragLayer.onEnterScrollArea(forwardDirection);
-                    mScrollRunnable.setDirection(forwardDirection);
-                    mHandler.postDelayed(mScrollRunnable, delay);
-                }
             }
         } else if (x > mScrollView.getWidth() - mScrollZone) {
             if (mScrollState == SCROLL_OUTSIDE_ZONE) {
                 mScrollState = SCROLL_WAITING_IN_ZONE;
-                if (mDragScroller.onEnterScrollArea(x, y, backwardsDirection)) {
-                    dragLayer.onEnterScrollArea(backwardsDirection);
-                    mScrollRunnable.setDirection(backwardsDirection);
-                    mHandler.postDelayed(mScrollRunnable, delay);
-                }
             }
-        } else {
-            clearScrollRunnable();
         }
     }
 
@@ -577,7 +540,6 @@ public class DragController {
 
             if ((dragLayerX < mScrollZone) || (dragLayerX > mScrollView.getWidth() - mScrollZone)) {
                 mScrollState = SCROLL_WAITING_IN_ZONE;
-                mHandler.postDelayed(mScrollRunnable, SCROLL_DELAY);
             } else {
                 mScrollState = SCROLL_OUTSIDE_ZONE;
             }
@@ -589,7 +551,6 @@ public class DragController {
         case MotionEvent.ACTION_UP:
             // Ensure that we've processed a move event at the current pointer location.
             handleMoveEvent(dragLayerX, dragLayerY);
-            mHandler.removeCallbacks(mScrollRunnable);
 
             if (mDragging) {
                 PointF vec = isFlingingToDelete(mDragObject.dragSource);
@@ -605,7 +566,6 @@ public class DragController {
             endDrag();
             break;
         case MotionEvent.ACTION_CANCEL:
-            mHandler.removeCallbacks(mScrollRunnable);
             cancelDrag();
             break;
         }
@@ -711,10 +671,6 @@ public class DragController {
         return null;
     }
 
-    public void setDragScoller(DragScroller scroller) {
-        mDragScroller = scroller;
-    }
-
     public void setWindowToken(IBinder token) {
         mWindowToken = token;
     }
@@ -777,35 +733,5 @@ public class DragController {
 
     DragView getDragView() {
         return mDragObject.dragView;
-    }
-
-    private class ScrollRunnable implements Runnable {
-        private int mDirection;
-
-        ScrollRunnable() {
-        }
-
-        public void run() {
-            if (mDragScroller != null) {
-                if (mDirection == SCROLL_LEFT) {
-                    mDragScroller.scrollLeft();
-                } else {
-                    mDragScroller.scrollRight();
-                }
-                mScrollState = SCROLL_OUTSIDE_ZONE;
-                mDistanceSinceScroll = 0;
-                mDragScroller.onExitScrollArea();
-                mLauncher.getDragLayer().onExitScrollArea();
-
-                if (isDragging()) {
-                    // Check the scroll again so that we can requeue the scroller if necessary
-                    checkScrollState(mLastTouch[0], mLastTouch[1]);
-                }
-            }
-        }
-
-        void setDirection(int direction) {
-            mDirection = direction;
-        }
     }
 }

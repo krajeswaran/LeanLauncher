@@ -1,38 +1,52 @@
+LeanLauncher
+============
 
+Minimal, dumb launcher forked from AOSP's [launcher 3](https://android.googlesource.com/platform/packages/apps/Launcher3/). It basically removes features and clutter from Launcher 3,
+similar in experience to [Smart Launcher](https://play.google.com/store/apps/details?id=ginlemon.flowerfree).
+
+Why
+---
+Because I got bored on a weekend and frustrated with launchers adding more crap I have no use far. Besides, everyone writes a launcher at somepoint :)
+
+Screenshots
+-----------
 
 Changelog
 =========
 
-* migrated to Android Studio/gradle project setup
-* No workspaces
+* Migrated Launcher 3 to Android Studio/gradle project setup
+* No workspaces. Only one workspace
 * No Hotseat/"dock"
 * No folder support
-* Can't crop or adjust wallpaper. You can still do that if you have an external program like Google Photos installed
+* No built-in wallpaper manager. You can pick wallpapers, but if you want to crop/adjust wallpapers you need an external app like G!Photos installed
 * No Backup settings to SD card. There is not much to backup anyway
 * No migration from old launcher settings
 * No welcome/first-run setup wizard
+* Apps will not be added to launcher on install, because of limited workspace
+* Basic performance optimizations from running Android lint
+* Cleaned up layouts, translations
 
 Credits
 =======
 
-From Launcher3 at
+Forked from Launcher3 at https://android.googlesource.com/platform/packages/apps/Launcher3
 Launcher icon from Material icons project
 
+License
+=======
+
+See LICENSE
 
 Todo
 ====
 
-[] FIX: landscape mode?, bugs: drag within workspace, on-click, layout improv
-[] all apps button position, should be movable
-[] swipe to all apps, recent tasks
-...
-[] release proguard config + test
-[] check perms
-[] clean up scripts, tests etc
-[] remove memory dump, debug stuff
-[] commit, publish
-[] less complicated preferences backend
-...
-[] icon theme
-[] double-tap config
-[] preferences activity: import/export, show all apps button, orientation
+-[] swipe to all apps, recent tasks
+-[] check perms
+-[] add monkey test
+-[] remove memory dump, debug stuff
+-[] release proguard config + test
+-[] commit, publish
+-[] Add support for icon theme
+-[] Add Preferences: import/export settings, all apps button behaviour, icon theme
+-[] Use a less complicated backend
+-[] Add support for recently launched row

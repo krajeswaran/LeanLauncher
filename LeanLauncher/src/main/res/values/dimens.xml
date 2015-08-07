@@ -18,7 +18,7 @@
 <!-- Dynamic Grid -->
     <dimen name="dynamic_grid_edge_margin">6dp</dimen>
     <dimen name="dynamic_grid_search_bar_max_width">500dp</dimen>
-    <dimen name="dynamic_grid_search_bar_height">56dp</dimen>
+    <dimen name="dynamic_grid_search_bar_height">48dp</dimen>
     <dimen name="dynamic_grid_page_indicator_height">20dp</dimen>
     <dimen name="dynamic_grid_icon_drawable_padding">4dp</dimen>
     <dimen name="dynamic_grid_all_apps_cell_padding">18dp</dimen>
@@ -28,20 +28,12 @@
     <dimen name="dynamic_grid_overview_bar_item_width">80dp</dimen>
     <dimen name="dynamic_grid_overview_bar_spacer_width">20dp</dimen>
 
-<!-- Cling -->
-    <dimen name="cling_migration_logo_height">240dp</dimen>
-    <dimen name="cling_migration_logo_width">165dp</dimen>
-    <dimen name="cling_migration_bg_size">400dp</dimen>
-    <dimen name="cling_migration_bg_shift">-200dp</dimen>
-    <dimen name="cling_migration_content_margin">16dp</dimen>
-    <dimen name="cling_migration_content_width">280dp</dimen>
-
 <!-- Workspace -->
     <dimen name="workspace_max_gap">16dp</dimen>
     <dimen name="workspace_overscroll_drawable_padding">0dp</dimen>
 
 <!-- QSB -->
-    <dimen name="toolbar_button_vertical_padding">4dip</dimen>
+    <dimen name="toolbar_button_vertical_padding">2dip</dimen>
     <dimen name="toolbar_button_horizontal_padding">12dip</dimen>
 
 <!-- AllApps/Customize/AppsCustomize -->

@@ -165,7 +165,7 @@ public class Workspace extends ViewGroup
     private SpringLoadedDragController mSpringLoadedDragController;
     private float mSpringLoadedShrinkFactor;
     private float mOverviewModeShrinkFactor;
-    private Rect mViewPort;
+    private Rect mViewPort = new Rect();
 
     // State variable that indicates whether the pages are small (ie when you're
     // in all apps or customize mode)
@@ -350,7 +350,7 @@ public class Workspace extends ViewGroup
         mIconCache = app.getIconCache();
         setWillNotDraw(false);
         setClipChildren(false);
-        setClipToPadding(true);
+        setClipToPadding(false);
         setChildrenDrawnWithCacheEnabled(true);
 
         setupLayoutTransition();
@@ -540,7 +540,7 @@ public class Workspace extends ViewGroup
         allAppsButton.setOnTouchListener(mLauncher.getHapticFeedbackTouchListener());
         allAppsButton.setOnClickListener(mLauncher);
         allAppsButton.setOnFocusChangeListener(mLauncher.mFocusHandler);
-        CellLayout.LayoutParams lp = new CellLayout.LayoutParams(mWorkspace.getCountX(), mWorkspace.getCountY()/2, 1, 1);
+        CellLayout.LayoutParams lp = new CellLayout.LayoutParams((mWorkspace.getCountX() - 1)/2, mWorkspace.getCountY() - 1, 1, 1);
         lp.canReorder = false;
         mWorkspace.addViewToCellLayout(allAppsButton, -1, allAppsButton.getId(), lp, true);
     }
@@ -552,8 +552,7 @@ public class Workspace extends ViewGroup
      */
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        return (workspaceInModalState() || !isFinishedSwitchingState())
-                || (!workspaceInModalState());
+        return (workspaceInModalState() || !isFinishedSwitchingState());
     }
 
     public boolean isSwitchingState() {
@@ -984,7 +983,6 @@ public class Workspace extends ViewGroup
             return;
         }
 
-        mViewPort = new Rect();
         mViewPort.set(0, 0, widthSize, heightSize);
 
         /* Allow the height to be set as WRAP_CONTENT. This allows the particular case
@@ -2759,7 +2757,7 @@ public class Workspace extends ViewGroup
 
     interface ItemOperator {
         /**
-         * Process the next itemInfo, possibly with side-effect on {@link ItemOperator#info}.
+         * Process the next itemInfo
          *
          * @param info info for the shortcut
          * @param view view for the shortcut

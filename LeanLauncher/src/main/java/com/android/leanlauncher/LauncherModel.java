@@ -47,6 +47,7 @@ import android.os.SystemClock;
 import android.provider.BaseColumns;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.LongSparseArray;
 import android.util.Pair;
 
 import com.android.leanlauncher.compat.AppWidgetManagerCompat;
@@ -83,18 +84,15 @@ public class LauncherModel extends BroadcastReceiver
     static final boolean DEBUG_LOADERS = BuildConfig.DEBUG;
     private static final boolean DEBUG_RECEIVER = BuildConfig.DEBUG;
     private static final boolean REMOVE_UNRESTORED_ICONS = true;
-    private static final boolean ADD_MANAGED_PROFILE_SHORTCUTS = false;
 
     static final String TAG = "Launcher.Model";
 
     // true = use a "More Apps" folder for non-workspace apps on upgrade
     // false = strew non-workspace apps across the workspace on upgrade
-    public static final boolean UPGRADE_USE_MORE_APPS_FOLDER = false;
     public static final int LOADER_FLAG_NONE = 0;
     public static final int LOADER_FLAG_CLEAR_WORKSPACE = 1 << 0;
 
     private static final int ITEMS_CHUNK = 6; // batch size for the workspace icons
-    private static final long INVALID_SCREEN_ID = -1L;
 
     private final boolean mAppsCanBeOnRemoveableStorage;
 
@@ -104,11 +102,6 @@ public class LauncherModel extends BroadcastReceiver
     private LoaderTask mLoaderTask;
     private boolean mIsLoaderTaskRunning;
     private volatile boolean mFlushingWorkerThread;
-
-    /**
-     * Maintain a set of packages per user, for which we added a shortcut on the workspace.
-     */
-    private static final String INSTALLED_SHORTCUTS_SET_PREFIX = "installed_shortcuts_set_for_user_";
 
     // Specific runnable types that are run on the main thread deferred handler, this allows us to
     // clear all queued binding runnables when the Launcher activity is destroyed.
@@ -890,7 +883,7 @@ public class LauncherModel extends BroadcastReceiver
     /**
      * Removes the specified items from the database
      * @param context
-     * @param item
+     * @param items
      */
     static void deleteItemsFromDatabase(Context context, final ArrayList<? extends ItemInfo> items) {
         final ContentResolver cr = context.getContentResolver();
@@ -1338,9 +1331,7 @@ public class LauncherModel extends BroadcastReceiver
             if (LauncherAppState.isDisableAllApps()) {
                 // Ensure that all the applications that are in the system are
                 // represented on the home screen.
-                if (!UPGRADE_USE_MORE_APPS_FOLDER || !isUpgrade) {
-                    verifyApplications();
-                }
+                verifyApplications();
             }
 
             // Clear out this reference, otherwise we end up holding it until all of the
@@ -1899,6 +1890,7 @@ public class LauncherModel extends BroadcastReceiver
                             Log.w(TAG, "Could not remove id = " + id);
                         }
                     }
+                    client.release();
                 }
 
                 if (restoredRows.size() > 0) {
@@ -1906,19 +1898,16 @@ public class LauncherModel extends BroadcastReceiver
                             contentUri);
                     // Update restored items that no longer require special handling
                     try {
-                        StringBuilder selectionBuilder = new StringBuilder();
-                        selectionBuilder.append(LauncherSettings.Favorites._ID);
-                        selectionBuilder.append(" IN (");
-                        selectionBuilder.append(TextUtils.join(", ", restoredRows));
-                        selectionBuilder.append(")");
                         ContentValues values = new ContentValues();
                         values.put(LauncherSettings.Favorites.RESTORED, 0);
                         updater.update(LauncherSettings.Favorites.CONTENT_URI_NO_NOTIFICATION,
-                                values, selectionBuilder.toString(), null);
+                                values, LauncherSettings.Favorites._ID + " IN (" + TextUtils.join(", ", restoredRows) + ")", null);
                     } catch (RemoteException e) {
                         Log.w(TAG, "Could not update restored rows");
                     }
+                    updater.release();
                 }
+
 
                 if (!isSdCardReady && !sPendingPackages.isEmpty()) {
                     context.registerReceiver(new AppsAvailabilityCheck(),
@@ -1933,19 +1922,6 @@ public class LauncherModel extends BroadcastReceiver
 
                 if (DEBUG_LOADERS) {
                     Log.d(TAG, "loaded workspace in " + (SystemClock.uptimeMillis()-t) + "ms");
-                    Log.d(TAG, "workspace layout: ");
-                    for (int y = 0; y < countY; y++) {
-                        String line = "";
-
-                        for (int x = 0; x < countX; x++) {
-//                            if (x < occupied.length && y < occupied[x].length) {
-//                                line += (occupied[x][y] != null) ? "#" : ".";
-//                            } else {
-                                line += "!";
-//                            }
-                        }
-                        Log.d(TAG, "[ " + line + " ]");
-                    }
                 }
             }
         }
@@ -2215,25 +2191,6 @@ public class LauncherModel extends BroadcastReceiver
                     // This builds the icon bitmaps.
                     mBgAllAppsList.add(new AppInfo(mContext, app, user, mIconCache, mLabelCache));
                 }
-
-                if (ADD_MANAGED_PROFILE_SHORTCUTS && !user.equals(UserHandleCompat.myUserHandle())) {
-                    // Add shortcuts for packages which were installed while launcher was dead.
-                    String shortcutsSetKey = INSTALLED_SHORTCUTS_SET_PREFIX
-                            + mUserManager.getSerialNumberForUser(user);
-                    Set<String> packagesAdded = prefs.getStringSet(shortcutsSetKey, Collections.EMPTY_SET);
-                    HashSet<String> newPackageSet = new HashSet<String>();
-
-                    for (LauncherActivityInfoCompat info : apps) {
-                        String packageName = info.getComponentName().getPackageName();
-                        if (!packagesAdded.contains(packageName)
-                                && !newPackageSet.contains(packageName)) {
-                            InstallShortcutReceiver.queueInstallShortcut(info, mContext);
-                        }
-                        newPackageSet.add(packageName);
-                    }
-
-                    prefs.edit().putStringSet(shortcutsSetKey, newPackageSet).commit();
-                }
             }
             // Huh? Shouldn't this be inside the Runnable below?
             final ArrayList<AppInfo> added = mBgAllAppsList.added;
@@ -2349,30 +2306,6 @@ public class LauncherModel extends BroadcastReceiver
                         mBgAllAppsList.addPackage(context, packages[i], mUser);
                     }
 
-                    // Auto add shortcuts for added packages.
-                    if (ADD_MANAGED_PROFILE_SHORTCUTS
-                            && !UserHandleCompat.myUserHandle().equals(mUser)) {
-                        SharedPreferences prefs = context.getSharedPreferences(
-                                LauncherAppState.getSharedPreferencesKey(), Context.MODE_PRIVATE);
-                        String shortcutsSetKey = INSTALLED_SHORTCUTS_SET_PREFIX
-                                + mUserManager.getSerialNumberForUser(mUser);
-                        Set<String> shortcutSet = new HashSet<String>(
-                                prefs.getStringSet(shortcutsSetKey,Collections.EMPTY_SET));
-
-                        for (int i=0; i<N; i++) {
-                            if (!shortcutSet.contains(packages[i])) {
-                                shortcutSet.add(packages[i]);
-                                List<LauncherActivityInfoCompat> activities =
-                                        mLauncherApps.getActivityList(packages[i], mUser);
-                                if (activities != null && !activities.isEmpty()) {
-                                    InstallShortcutReceiver.queueInstallShortcut(
-                                            activities.get(0), context);
-                                }
-                            }
-                        }
-
-                        prefs.edit().putStringSet(shortcutsSetKey, shortcutSet).commit();
-                    }
                     break;
                 case OP_UPDATE:
                     for (int i=0; i<N; i++) {
@@ -2385,25 +2318,14 @@ public class LauncherModel extends BroadcastReceiver
                 case OP_REMOVE:
                     // Remove the packageName for the set of auto-installed shortcuts. This
                     // will ensure that the shortcut when the app is installed again.
-                    if (ADD_MANAGED_PROFILE_SHORTCUTS
-                            && !UserHandleCompat.myUserHandle().equals(mUser)) {
-                        SharedPreferences prefs = context.getSharedPreferences(
-                                LauncherAppState.getSharedPreferencesKey(), Context.MODE_PRIVATE);
-                        String shortcutsSetKey = INSTALLED_SHORTCUTS_SET_PREFIX
-                                + mUserManager.getSerialNumberForUser(mUser);
-                        HashSet<String> shortcutSet = new HashSet<String>(
-                                prefs.getStringSet(shortcutsSetKey, Collections.EMPTY_SET));
-                        shortcutSet.removeAll(Arrays.asList(mPackages));
-                        prefs.edit().putStringSet(shortcutsSetKey, shortcutSet).commit();
-                    }
                     // Fall through
                 case OP_UNAVAILABLE:
                     boolean clearCache = mOp == OP_REMOVE;
-                    for (int i=0; i<N; i++) {
-                        if (DEBUG_LOADERS) Log.d(TAG, "mAllAppsList.removePackage " + packages[i]);
-                        mBgAllAppsList.removePackage(packages[i], mUser, clearCache);
+                    for (String aPackage : packages) {
+                        if (DEBUG_LOADERS) Log.d(TAG, "mAllAppsList.removePackage " + aPackage);
+                        mBgAllAppsList.removePackage(aPackage, mUser, clearCache);
                         WidgetPreviewLoader.removePackageFromDb(
-                                mApp.getWidgetPreviewCacheDb(), packages[i]);
+                                mApp.getWidgetPreviewCacheDb(), aPackage);
                     }
                     break;
             }
@@ -2569,7 +2491,7 @@ public class LauncherModel extends BroadcastReceiver
 
                         public void run() {
                             Callbacks cb = getCallback();
-                            if (callbacks == cb && cb != null) {
+                            if (callbacks == cb) {
                                 callbacks.bindShortcutsChanged(
                                         updatedShortcuts, removedShortcuts, mUser);
                             }
@@ -2583,7 +2505,7 @@ public class LauncherModel extends BroadcastReceiver
                     mHandler.post(new Runnable() {
                         public void run() {
                             Callbacks cb = getCallback();
-                            if (callbacks == cb && cb != null) {
+                            if (callbacks == cb) {
                                 callbacks.bindWidgetsRestored(widgets);
                             }
                         }
@@ -2598,9 +2520,9 @@ public class LauncherModel extends BroadcastReceiver
                 removedPackageNames.addAll(Arrays.asList(packages));
             } else if (mOp == OP_UPDATE) {
                 // Mark disabled packages in the broadcast to be removed
-                for (int i=0; i<N; i++) {
-                    if (isPackageDisabled(context, packages[i], mUser)) {
-                        removedPackageNames.add(packages[i]);
+                for (String aPackage : packages) {
+                    if (isPackageDisabled(context, aPackage, mUser)) {
+                        removedPackageNames.add(aPackage);
                     }
                 }
             }
@@ -2622,13 +2544,11 @@ public class LauncherModel extends BroadcastReceiver
                     removeReason = 0;
                 }
 
-                // Remove any queued items from the install queue
-                InstallShortcutReceiver.removeFromInstallQueue(context, removedPackageNames, mUser);
                 // Call the components-removed callback
                 mHandler.post(new Runnable() {
                     public void run() {
                         Callbacks cb = getCallback();
-                        if (callbacks == cb && cb != null) {
+                        if (callbacks == cb) {
                             callbacks.bindComponentsRemoved(
                                     removedPackageNames, removedApps, mUser, removeReason);
                         }
@@ -2642,7 +2562,7 @@ public class LauncherModel extends BroadcastReceiver
                 @Override
                 public void run() {
                     Callbacks cb = getCallback();
-                    if (callbacks == cb && cb != null) {
+                    if (callbacks == cb) {
                         callbacks.bindPackagesUpdated(widgetsAndShortcuts);
                     }
                 }
@@ -2652,7 +2572,7 @@ public class LauncherModel extends BroadcastReceiver
             mHandler.post(new Runnable() {
                 public void run() {
                     Callbacks cb = getCallback();
-                    if (callbacks == cb && cb != null) {
+                    if (callbacks == cb) {
                         callbacks.dumpLogsToLocalData();
                     }
                 }

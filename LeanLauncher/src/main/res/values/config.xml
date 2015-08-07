@@ -1,8 +1,8 @@
 <resources>
 <!-- Dynamic Grid -->
-    <integer name="config_dynamic_grid_max_long_edge_cell_count">6</integer>
-    <integer name="config_dynamic_grid_max_short_edge_cell_count">5</integer>
-    <integer name="config_dynamic_grid_min_edge_cell_count">3</integer>
+    <integer name="config_dynamic_grid_max_long_edge_cell_count">7</integer>
+    <integer name="config_dynamic_grid_max_short_edge_cell_count">6</integer>
+    <integer name="config_dynamic_grid_min_edge_cell_count">4</integer>
     <!-- Out of 100, the percent of space the overview bar should try and take vertically. -->
     <integer name="config_dynamic_grid_overview_icon_zone_percentage">10</integer>
     <!-- Out of 100, the percent to shrink the workspace during overview mode. -->
@@ -96,11 +96,11 @@
     <!-- Memory debugging, including a memory dump icon -->
     <bool name="debug_memory_enabled">false</bool>
 
-    <!-- Name of a subclass of minimallauncheruncher.AppFilter used to
+    <!-- Name of a subclass of leanlauncher.AppFilter used to
          filter the activities shown in the launcher. Can be empty. -->
     <string name="app_filter_class" translatable="false"></string>
 
-    <!-- Name of a subclass of minimallauncheruncher.BuildInfo used to
+    <!-- Name of a subclass of leanlauncher.BuildInfo used to
          get build information. Can be empty. -->
     <string name="build_info_class" translatable="false"></string>
 </resources>
