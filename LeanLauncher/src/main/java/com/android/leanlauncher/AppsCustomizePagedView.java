@@ -926,7 +926,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         int heightSpec = MeasureSpec.makeMeasureSpec(mContentHeight, MeasureSpec.AT_MOST);
         layout.measure(widthSpec, heightSpec);
 
-        Drawable bg = getContext().getResources().getDrawable(R.drawable.quantum_panel);
+        Drawable bg = getContext().getResources().getDrawable(R.drawable.quantum_panel_dark);
         if (bg != null) {
             bg.setAlpha(mPageBackgroundsVisible ? 255: 0);
             layout.setBackground(bg);

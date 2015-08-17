@@ -29,6 +29,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -90,8 +91,8 @@ public class IconCache {
         }
     }
 
-    private final HashMap<UserHandleCompat, Bitmap> mDefaultIcons =
-            new HashMap<UserHandleCompat, Bitmap>();
+    private final ArrayMap<UserHandleCompat, Bitmap> mDefaultIcons =
+            new ArrayMap<>();
     private final Context mContext;
     private final PackageManager mPackageManager;
     private final UserManagerCompat mUserManager;

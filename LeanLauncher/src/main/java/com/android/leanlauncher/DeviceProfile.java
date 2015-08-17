@@ -209,17 +209,7 @@ public class DeviceProfile {
         // Calculate the remaining vars
         updateFromConfiguration(context, res, wPx, hPx, awPx, ahPx);
         updateAvailableDimensions(context);
-        computeAllAppsButtonSize(context);
-    }
-
-    /**
-     * Determine the exact visual footprint of the all apps button, taking into account scaling
-     * and internal padding of the drawable.
-     */
-    private void computeAllAppsButtonSize(Context context) {
-        Resources res = context.getResources();
-        float padding = res.getInteger(R.integer.config_allAppsButtonPaddingPercent) / 100f;
-        allAppsButtonVisualSize = (int) (DynamicGrid.DEFAULT_ICON_SIZE_PX * (1 - padding));
+        allAppsButtonVisualSize = (int) DynamicGrid.DEFAULT_ICON_SIZE_PX;
     }
 
     void addCallback(DeviceProfileCallbacks cb) {
@@ -305,7 +295,7 @@ public class DeviceProfile {
         // Search Bar
         searchBarSpaceWidthPx = Math.min(widthPx,
                 resources.getDimensionPixelSize(R.dimen.dynamic_grid_search_bar_max_width));
-        searchBarSpaceHeightPx = getSearchBarTopOffset()
+        searchBarSpaceHeightPx = getStatusBarTopOffset()
                 + resources.getDimensionPixelSize(R.dimen.dynamic_grid_search_bar_height);
 
         // Calculate the actual text height
@@ -426,7 +416,7 @@ public class DeviceProfile {
     }
 
     /** Returns the search bar top offset */
-    int getSearchBarTopOffset() {
+    int getStatusBarTopOffset() {
         if (isTablet() && !isVerticalBarLayout()) {
             return 4 * edgeMarginPx;
         } else {
@@ -461,12 +451,12 @@ public class DeviceProfile {
                 //      that into account here too.
                 int gap = (int) ((width - 2 * edgeMarginPx -
                         (numColumns * cellWidthPx)) / (2 * (numColumns + 1)));
-                bounds.set(edgeMarginPx + gap, getSearchBarTopOffset(),
+                bounds.set(edgeMarginPx + gap, getStatusBarTopOffset(),
                         availableWidthPx - (edgeMarginPx + gap),
                         searchBarSpaceHeightPx);
             } else {
                 bounds.set(desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.left,
-                        getSearchBarTopOffset(),
+                        getStatusBarTopOffset(),
                         availableWidthPx - (desiredWorkspaceLeftRightMarginPx -
                         defaultWidgetPadding.right), searchBarSpaceHeightPx);
             }
@@ -506,7 +496,7 @@ public class DeviceProfile {
             } else {
                 // Pad the top and bottom of the workspace with search/hotseat bar sizes
                 padding.set(desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.left,
-                        0,
+                        getStatusBarTopOffset(),
                         desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.right,
                         0);
             }
@@ -635,7 +625,7 @@ public class DeviceProfile {
                 padding.bottom = Math.max(0, pageIndicatorHeight - paddingTB);
 
                 pagedView.setWidgetsPageIndicatorPadding(pageIndicatorHeight);
-                fakePage.setBackground(res.getDrawable(R.drawable.quantum_panel));
+                fakePage.setBackground(res.getDrawable(R.drawable.quantum_panel_dark));
 
                 // Horizontal padding for the whole paged view
                 int pagedFixedViewPadding =

@@ -42,8 +42,6 @@ import java.util.ArrayList;
 public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
     private static final String TAG = "LauncherAppState";
 
-    private static final boolean DEBUG = false;
-
     private final AppFilter mAppFilter;
     private final BuildInfo mBuildInfo;
     private final LauncherModel mModel;
@@ -92,10 +90,6 @@ public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
 
         Log.v(Launcher.TAG, "LauncherAppState inited");
 
-        if (sContext.getResources().getBoolean(R.bool.debug_memory_enabled)) {
-            MemoryTracker.startTrackingMe(sContext, "L");
-        }
-
         // set sIsScreenXLarge and mScreenDensity *before* creating icon cache
         mIsScreenLarge = isScreenLarge(sContext.getResources());
         mScreenDensity = sContext.getResources().getDisplayMetrics().density;
@@ -142,6 +136,7 @@ public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
         final LauncherAppsCompat launcherApps = LauncherAppsCompat.getInstance(sContext);
         launcherApps.removeOnAppsChangedCallback(mModel);
         PackageInstallerCompat.getInstance(sContext).onStop();
+        mDynamicGrid.getDeviceProfile().removeCallback(this);
 
         ContentResolver resolver = sContext.getContentResolver();
         resolver.unregisterContentObserver(mFavoritesObserver);

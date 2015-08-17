@@ -61,10 +61,14 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.StrictMode;
 import android.os.SystemClock;
+import android.support.v4.util.ArrayMap;
+import android.support.v4.util.SparseArrayCompat;
 import android.text.Selection;
 import android.text.SpannableStringBuilder;
 import android.text.method.TextKeyListener;
 import android.util.Log;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -132,9 +136,6 @@ public class Launcher extends Activity
     static final boolean DEBUG_WIDGETS = false;
     static final boolean DEBUG_STRICT_MODE = false;
     static final boolean DEBUG_RESUME_TIME = false;
-    static final boolean DEBUG_DUMP_LOG = BuildConfig.DEBUG;
-
-    static final boolean ENABLE_DEBUG_INTENTS = BuildConfig.DEBUG; // allow DebugIntents to run
 
     private static final int REQUEST_CREATE_SHORTCUT = 1;
     private static final int REQUEST_CREATE_APPWIDGET = 5;
@@ -202,13 +203,9 @@ public class Launcher extends Activity
 
     private static final Object sLock = new Object();
 
-    private HashMap<Integer, Integer> mItemIdToViewId = new HashMap<Integer, Integer>();
+    private SerializableSparseArray<Integer> mItemIdToViewId = new SerializableSparseArray<Integer>();
     private static final AtomicInteger sNextGeneratedId = new AtomicInteger(1);
 
-    // How long to wait before the new-shortcut animation automatically pans the workspace
-    private static int NEW_APPS_PAGE_MOVE_DELAY = 500;
-    private static int NEW_APPS_ANIMATION_INACTIVE_TIMEOUT_SECONDS = 5;
-    private static int NEW_APPS_ANIMATION_DELAY = 500;
     private static final int SINGLE_FRAME_DELAY = 16;
 
     private final BroadcastReceiver mCloseSystemDialogsReceiver
@@ -239,7 +236,6 @@ public class Launcher extends Activity
     private AppsCustomizeTabHost mAppsCustomizeTabHost;
     private AppsCustomizePagedView mAppsCustomizeContent;
     private boolean mAutoAdvanceRunning = false;
-    private AppWidgetHostView mQsb;
 
     private Bundle mSavedState;
     // We set the state in both onCreate and then onNewIntent in some cases, which causes both
@@ -323,10 +319,6 @@ public class Launcher extends Activity
         int appWidgetId;
     }
 
-    private Stats mStats;
-
-    FocusIndicatorView mFocusHandler;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (DEBUG_STRICT_MODE) {
@@ -361,8 +353,6 @@ public class Launcher extends Activity
         mIconCache.flushInvalidIcons(grid);
         mDragController = new DragController(this);
         mInflater = getLayoutInflater();
-
-        mStats = new Stats(this);
 
         mAppWidgetManager = AppWidgetManagerCompat.getInstance(this);
 
@@ -513,10 +503,6 @@ public class Launcher extends Activity
         }
     }
 
-    public Stats getStats() {
-        return mStats;
-    }
-
     public LayoutInflater getInflater() {
         return mInflater;
     }
@@ -551,7 +537,7 @@ public class Launcher extends Activity
         if (info != null) {
             itemId = (int) info.id;
         }
-        if (mItemIdToViewId.containsKey(itemId)) {
+        if (mItemIdToViewId.indexOfKey(itemId) > 0) {
             return mItemIdToViewId.get(itemId);
         }
         int viewId = generateViewId();
@@ -975,7 +961,7 @@ public class Launcher extends Activity
             int currentIndex = savedState.getInt("apps_customize_currentIndex");
             mAppsCustomizeContent.restorePageForIndex(currentIndex);
         }
-        mItemIdToViewId = (HashMap<Integer, Integer>)
+        mItemIdToViewId = (SerializableSparseArray<Integer>)
                 savedState.getSerializable(RUNTIME_STATE_VIEW_IDS);
     }
 
@@ -986,7 +972,6 @@ public class Launcher extends Activity
         final DragController dragController = mDragController;
 
         mLauncherView = findViewById(R.id.launcher);
-        mFocusHandler = (FocusIndicatorView) findViewById(R.id.focus_indicator);
         mDragLayer = (DragLayer) findViewById(R.id.drag_layer);
         mWorkspace = (Workspace) mDragLayer.findViewById(R.id.workspace);
 
@@ -1026,6 +1011,19 @@ public class Launcher extends Activity
         mWorkspace.setHapticFeedbackEnabled(false);
         mWorkspace.setOnLongClickListener(this);
         mWorkspace.setup(dragController);
+        mWorkspace.setOnTouchListener(new OnSwipeTouchListener(this) {
+            @Override
+            public void onSwipeLeft() {
+                showAllApps(true, AppsCustomizePagedView.ContentType.Applications, false);
+            }
+
+            @Override
+            public void onSwipeRight() {
+                Intent intent = new Intent ("com.android.systemui.recent.action.TOGGLE_RECENTS");
+                intent.setComponent (new ComponentName ("com.android.systemui", "com.android.systemui.recent.RecentsActivity"));
+                startActivity (intent);
+            }
+        });
         dragController.addDragListener(mWorkspace);
 
         // Get the search/delete bar
@@ -1045,21 +1043,6 @@ public class Launcher extends Activity
         dragController.addDropTarget(mWorkspace);
         if (mDeleteDropTargetBar != null) {
             mDeleteDropTargetBar.setup(this, dragController);
-        }
-
-        if (getResources().getBoolean(R.bool.debug_memory_enabled)) {
-            Log.v(TAG, "adding WeightWatcher");
-            mWeightWatcher = new WeightWatcher(this);
-            mWeightWatcher.setAlpha(0.5f);
-            ((FrameLayout) mLauncherView).addView(mWeightWatcher,
-                    new FrameLayout.LayoutParams(
-                            FrameLayout.LayoutParams.MATCH_PARENT,
-                            FrameLayout.LayoutParams.WRAP_CONTENT,
-                            Gravity.BOTTOM)
-            );
-
-            boolean show = shouldShowWeightWatcher();
-            mWeightWatcher.setVisibility(show ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -1098,15 +1081,11 @@ public class Launcher extends Activity
         BubbleTextView favorite = (BubbleTextView) mInflater.inflate(layoutResId, parent, false);
         favorite.applyFromShortcutInfoFromLauncher(info, mIconCache, true);
         favorite.setOnClickListener(this);
-        favorite.setOnFocusChangeListener(mFocusHandler);
         return favorite;
     }
 
     /**
      * Add a shortcut to the workspace.
-     *
-     * @param data The intent describing the shortcut.
-     * @param cellInfo The position on screen where to create the shortcut.
      */
     private void completeAddShortcut(Intent data, long container, int cellX,
             int cellY) {
@@ -1288,10 +1267,6 @@ public class Launcher extends Activity
             } else if (Intent.ACTION_USER_PRESENT.equals(action)) {
                 mUserPresent = true;
                 updateRunning();
-            } else if (ENABLE_DEBUG_INTENTS && DebugIntents.DELETE_DATABASE.equals(action)) {
-                mModel.resetLoadedState(false, true);
-                mModel.startLoader(false, PagedView.INVALID_RESTORE_PAGE,
-                        LauncherModel.LOADER_FLAG_CLEAR_WORKSPACE);
             } else if (LauncherAppsCompat.ACTION_MANAGED_PROFILE_ADDED.equals(action)
                     || LauncherAppsCompat.ACTION_MANAGED_PROFILE_REMOVED.equals(action)) {
                 getModel().forceReload();
@@ -1310,9 +1285,6 @@ public class Launcher extends Activity
         // For handling managed profiles
         filter.addAction(LauncherAppsCompat.ACTION_MANAGED_PROFILE_ADDED);
         filter.addAction(LauncherAppsCompat.ACTION_MANAGED_PROFILE_REMOVED);
-        if (ENABLE_DEBUG_INTENTS) {
-            filter.addAction(DebugIntents.DELETE_DATABASE);
-        }
         registerReceiver(mReceiver, filter);
         FirstFrameAnimatorHelper.initializeDrawListener(getWindow().getDecorView());
         setupTransparentSystemBarsForLmp();
@@ -1388,6 +1360,7 @@ public class Launcher extends Activity
                 // apps is nice and speedy.
                 observer.addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
                     private boolean mStarted = false;
+
                     public void onDraw() {
                         if (mStarted) return;
                         mStarted = true;
@@ -1399,15 +1372,14 @@ public class Launcher extends Activity
                         mWorkspace.postDelayed(mBuildLayersRunnable, 500);
                         final ViewTreeObserver.OnDrawListener listener = this;
                         mWorkspace.post(new Runnable() {
-                                public void run() {
-                                    if (mWorkspace != null &&
-                                            mWorkspace.getViewTreeObserver() != null) {
-                                        mWorkspace.getViewTreeObserver().
-                                                removeOnDrawListener(listener);
-                                    }
+                            public void run() {
+                                if (mWorkspace != null &&
+                                        mWorkspace.getViewTreeObserver() != null) {
+                                    mWorkspace.getViewTreeObserver().
+                                            removeOnDrawListener(listener);
                                 }
-                            });
-                        return;
+                            }
+                        });
                     }
                 });
             }
@@ -1773,7 +1745,6 @@ public class Launcher extends Activity
      *
      * @param info The PendingAppWidgetInfo of the widget being added.
      * @param cell The cell it should be added to, optional
-     * @param position The location on the screen where it was dropped, optional
      */
     void addAppWidgetFromDrop(PendingAddWidgetInfo info, long container,
             int[] cell, int[] span, int[] loc) {
@@ -2019,19 +1990,6 @@ public class Launcher extends Activity
 
         final Intent intent = shortcut.intent;
 
-        // Check for special shortcuts
-        if (intent.getComponent() != null) {
-            final String shortcutClass = intent.getComponent().getClassName();
-
-            if (shortcutClass.equals(MemoryDumpActivity.class.getName())) {
-                MemoryDumpActivity.startDump(this);
-                return;
-            } else if (shortcutClass.equals(ToggleWeightWatcher.class.getName())) {
-                toggleShowWeightWatcher();
-                return;
-            }
-        }
-
         // Check for abandoned promise
         if ((v instanceof BubbleTextView)
                 && shortcut.isPromise()
@@ -2070,7 +2028,6 @@ public class Launcher extends Activity
         }
 
         boolean success = startActivitySafely(v, intent, tag);
-        mStats.recordLaunch(intent, shortcut);
 
         if (success && v instanceof BubbleTextView) {
             mWaitingForResume = (BubbleTextView) v;
@@ -2099,16 +2056,6 @@ public class Launcher extends Activity
         if (LOGD) Log.d(TAG, "onClickWallpaperPicker");
         final Intent pickWallpaper = new Intent(Intent.ACTION_SET_WALLPAPER);
         startActivityForResult(pickWallpaper, REQUEST_PICK_WALLPAPER);
-    }
-
-    public void onTouchDownAllAppsButton(View v) {
-        // Provide the same haptic feedback that the system offers for virtual keys.
-        v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
-    }
-
-    public void performHapticFeedbackOnTouchDown(View v) {
-        // Provide the same haptic feedback that the system offers for virtual keys.
-        v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
     }
 
     public View.OnTouchListener getHapticFeedbackTouchListener() {
@@ -2414,11 +2361,7 @@ public class Launcher extends Activity
             final View revealView = toView.findViewById(R.id.fake_page);
 
             final boolean isWidgetTray = contentType == AppsCustomizePagedView.ContentType.Widgets;
-            if (isWidgetTray) {
-                revealView.setBackground(res.getDrawable(R.drawable.quantum_panel_dark));
-            } else {
-                revealView.setBackground(res.getDrawable(R.drawable.quantum_panel));
-            }
+            revealView.setBackground(res.getDrawable(R.drawable.quantum_panel_dark));
 
             // Hide the real page background, and swap in the fake one
             content.setPageBackgroundsVisible(false);
@@ -2656,11 +2599,7 @@ public class Launcher extends Activity
                 final boolean isWidgetTray =
                         contentType == AppsCustomizePagedView.ContentType.Widgets;
 
-                if (isWidgetTray) {
-                    revealView.setBackground(res.getDrawable(R.drawable.quantum_panel_dark));
-                } else {
-                    revealView.setBackground(res.getDrawable(R.drawable.quantum_panel));
-                }
+                revealView.setBackground(res.getDrawable(R.drawable.quantum_panel_dark));
 
                 int width = revealView.getMeasuredWidth();
                 int height = revealView.getMeasuredHeight();
@@ -3710,21 +3649,6 @@ public class Launcher extends Activity
         }
     }
 
-    public static void dumpDebugLogsToConsole() {
-        if (DEBUG_DUMP_LOG) {
-            synchronized (sDumpLogs) {
-                Log.d(TAG, "");
-                Log.d(TAG, "*********************");
-                Log.d(TAG, "Launcher debug logs: ");
-                for (int i = 0; i < sDumpLogs.size(); i++) {
-                    Log.d(TAG, "  " + sDumpLogs.get(i));
-                }
-                Log.d(TAG, "*********************");
-                Log.d(TAG, "");
-            }
-        }
-    }
-
     public static void addDumpLog(String tag, String log, boolean debugLog) {
         addDumpLog(tag, log, null, debugLog);
     }
@@ -3737,60 +3661,6 @@ public class Launcher extends Activity
                 Log.d(tag, log);
             }
         }
-        if (DEBUG_DUMP_LOG) {
-            sDateStamp.setTime(System.currentTimeMillis());
-            synchronized (sDumpLogs) {
-                sDumpLogs.add(sDateFormat.format(sDateStamp) + ": " + tag + ", " + log
-                    + (e == null ? "" : (", Exception: " + e)));
-            }
-        }
-    }
-
-    public void dumpLogsToLocalData() {
-        if (DEBUG_DUMP_LOG) {
-            new AsyncTask<Void, Void, Void>() {
-                public Void doInBackground(Void ... args) {
-                    boolean success = false;
-                    sDateStamp.setTime(sRunStart);
-                    String FILENAME = sDateStamp.getMonth() + "-"
-                            + sDateStamp.getDay() + "_"
-                            + sDateStamp.getHours() + "-"
-                            + sDateStamp.getMinutes() + "_"
-                            + sDateStamp.getSeconds() + ".txt";
-
-                    FileOutputStream fos = null;
-                    File outFile = null;
-                    try {
-                        outFile = new File(getFilesDir(), FILENAME);
-                        outFile.createNewFile();
-                        fos = new FileOutputStream(outFile);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    if (fos != null) {
-                        PrintWriter writer = new PrintWriter(fos);
-
-                        writer.println(" ");
-                        writer.println("Debug logs: ");
-                        synchronized (sDumpLogs) {
-                            for (int i = 0; i < sDumpLogs.size(); i++) {
-                                writer.println("  " + sDumpLogs.get(i));
-                            }
-                        }
-                        writer.close();
-                    }
-                    try {
-                        if (fos != null) {
-                            fos.close();
-                            success = true;
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                }
-            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void) null);
-        }
     }
 }
 
@@ -3800,8 +3670,4 @@ interface LauncherTransitionable {
     void onLauncherTransitionStart(Launcher l, boolean animated, boolean toWorkspace);
     void onLauncherTransitionStep(Launcher l, float t);
     void onLauncherTransitionEnd(Launcher l, boolean animated, boolean toWorkspace);
-}
-
-interface DebugIntents {
-    static final String DELETE_DATABASE = "com.android.leanlauncher.action.DELETE_DATABASE";
 }

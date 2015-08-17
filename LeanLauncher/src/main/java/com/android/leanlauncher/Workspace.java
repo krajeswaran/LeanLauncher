@@ -45,6 +45,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Parcelable;
+import android.support.v4.util.ArrayMap;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
@@ -82,16 +83,11 @@ public class Workspace extends ViewGroup
 
     private static final String TAG = "LeanLauncher.Workspace";
 
-    // Y rotation to apply to the workspace screens
-    private static final float WORKSPACE_OVERSCROLL_ROTATION = 24f;
-
     private static final int CHILDREN_OUTLINE_FADE_OUT_DELAY = 0;
     private static final int CHILDREN_OUTLINE_FADE_OUT_DURATION = 375;
     private static final int CHILDREN_OUTLINE_FADE_IN_DURATION = 100;
 
     private static final int BACKGROUND_FADE_OUT_DURATION = 350;
-    private static final int ADJACENT_SCREEN_DROP_DURATION = 300;
-    private static final int FLING_THRESHOLD_VELOCITY = 500;
 
     private static final float ALPHA_CUTOFF_THRESHOLD = 0.01f;
 
@@ -107,15 +103,10 @@ public class Workspace extends ViewGroup
     private ValueAnimator mBackgroundFadeInAnimation;
     private ValueAnimator mBackgroundFadeOutAnimation;
 
-    private static final long CUSTOM_CONTENT_GESTURE_DELAY = 200;
-    private long mTouchDownTime = -1;
-    private long mCustomContentShowTime = -1;
-
     private LayoutTransition mLayoutTransition;
     private final WallpaperManager mWallpaperManager;
     private IBinder mWindowToken;
 
-    private ShortcutAndWidgetContainer mDragSourceInternal;
     private static boolean sAccessibilityEnabled;
 
     private CellLayout mWorkspace;
@@ -156,7 +147,6 @@ public class Workspace extends ViewGroup
     // These are temporary variables to prevent having to allocate a new object just to
     // return an (x, y) value from helper functions. Do NOT use them to maintain other state.
     private int[] mTempCell = new int[2];
-    private int[] mTempPt = new int[2];
     private int[] mTempEstimate = new int[2];
     private float[] mDragViewVisualCenter = new float[2];
     private float[] mTempCellLayoutCenterCoordinates = new float[2];
@@ -176,9 +166,7 @@ public class Workspace extends ViewGroup
 
     boolean mAnimatingViewIntoPlace = false;
     boolean mIsDragOccuring = false;
-    boolean mChildrenLayersEnabled = true;
 
-    private boolean mStripScreensOnPageStopMoving = false;
 
     /** Is the user is dragging an item near the edge of a page? */
     private boolean mInScrollArea = false;
@@ -187,22 +175,11 @@ public class Workspace extends ViewGroup
     private Bitmap mDragOutline = null;
     private static final Rect sTempRect = new Rect();
     private final int[] mTempXY = new int[2];
-    private boolean mOverscrollEffectSet;
     public static final int DRAG_BITMAP_PADDING = 2;
 
-    private Runnable mDelayedResizeRunnable;
-    private Runnable mDelayedSnapToPageRunnable;
     private Point mDisplaySize = new Point();
-    private int mCameraDistance;
 
     private final Canvas mCanvas = new Canvas();
-
-    // Variables relating to touch disambiguation (scrolling workspace vs. scrolling a widget)
-    private float mXDown;
-    private float mYDown;
-    final static float START_DAMPING_TOUCH_SLOP_ANGLE = (float) Math.PI / 6;
-    final static float MAX_SWIPE_ANGLE = (float) Math.PI / 3;
-    final static float TOUCH_SLOP_DAMPING_FACTOR = 4;
 
     // Relating to the animation of items being dropped externally
     public static final int ANIMATE_INTO_POSITION_AND_DISAPPEAR = 0;
@@ -220,18 +197,12 @@ public class Workspace extends ViewGroup
 
     private SparseArray<Parcelable> mSavedStates;
 
-    // These variables are used for storing the initial and final values during workspace animations
-    private int mSavedScrollX;
-    private float mSavedRotationY;
-    private float mSavedTranslationX;
-
     private float mCurrentScale;
     private float mNewScale;
     private float mOldBackgroundAlpha;
     private float mOldAlpha;
     private float mNewBackgroundAlpha;
     private float mNewAlpha;
-    private int mLastChildCount = -1;
     private float mTransitionProgress;
     private Animator mStateAnimator = null;
     private int mTouchState = PagedView.TOUCH_STATE_REST;
@@ -282,7 +253,6 @@ public class Workspace extends ViewGroup
         mSpringLoadedShrinkFactor =
             res.getInteger(R.integer.config_workspaceSpringLoadShrinkPercentage) / 100.0f;
         mOverviewModeShrinkFactor = grid.getOverviewModeScale();
-        mCameraDistance = res.getInteger(R.integer.config_cameraDistance);
         a.recycle();
 
         setOnHierarchyChangeListener(this);
@@ -338,8 +308,6 @@ public class Workspace extends ViewGroup
 
         // Re-enable any Un/InstallShortcutReceiver and now process any queued items
         UninstallShortcutReceiver.disableAndFlushUninstallQueue(getContext());
-
-        mDragSourceInternal = null;
     }
 
     /**
@@ -349,8 +317,8 @@ public class Workspace extends ViewGroup
         LauncherAppState app = LauncherAppState.getInstance();
         mIconCache = app.getIconCache();
         setWillNotDraw(false);
-        setClipChildren(false);
-        setClipToPadding(false);
+        setClipChildren(true);
+        setClipToPadding(true);
         setChildrenDrawnWithCacheEnabled(true);
 
         setupLayoutTransition();
@@ -443,23 +411,11 @@ public class Workspace extends ViewGroup
         return mWorkspace;
     }
 
-    // See implementation for parameter definition.
-    void addInScreen(View child, long container,
-            int x, int y, int spanX, int spanY) {
-        addInScreen(child, container, x, y, spanX, spanY, false, false);
-    }
-
     // At bind time, we use the rank (screenId) to compute x and y for hotseat items.
     // See implementation for parameter definition.
     void addInScreenFromBind(View child, long container, int x, int y,
             int spanX, int spanY) {
-        addInScreen(child, container, x, y, spanX, spanY, false, true);
-    }
-
-    // See implementation for parameter definition.
-    void addInScreen(View child, long container, int x, int y, int spanX, int spanY,
-            boolean insert) {
-        addInScreen(child, container, x, y, spanX, spanY, insert, false);
+        addInScreen(child, container, x, y, spanX, spanY, false);
     }
 
     /**
@@ -472,12 +428,9 @@ public class Workspace extends ViewGroup
      * @param spanX The number of cells spanned horizontally by the child.
      * @param spanY The number of cells spanned vertically by the child.
      * @param insert When true, the child is inserted at the beginning of the children list.
-     * @param computeXYFromRank When true, we use the rank (stored in screenId) to compute
-     *                          the x and y position in which to place hotseat items. Otherwise
-     *                          we use the x and y position to compute the rank.
      */
     void addInScreen(View child, long container, int x, int y, int spanX, int spanY,
-            boolean insert, boolean computeXYFromRank) {
+            boolean insert) {
         if (container == LauncherSettings.Favorites.CONTAINER_DESKTOP) {
             if (getScreen() == null) {
                 Log.e(TAG, "Skipping child, screen not found");
@@ -531,7 +484,7 @@ public class Workspace extends ViewGroup
         TextView allAppsButton = (TextView)
                 inflater.inflate(R.layout.all_apps_button, mWorkspace, false);
         Drawable d = getResources().getDrawable(R.drawable.all_apps_button_icon);
-        Utilities.resizeIconDrawable(d);
+//        Utilities.resizeIconDrawable(d);
         allAppsButton.setCompoundDrawables(null, d, null, null);
         allAppsButton.setContentDescription(getResources().getString(R.string.all_apps_button_label));
 
@@ -539,7 +492,6 @@ public class Workspace extends ViewGroup
 
         allAppsButton.setOnTouchListener(mLauncher.getHapticFeedbackTouchListener());
         allAppsButton.setOnClickListener(mLauncher);
-        allAppsButton.setOnFocusChangeListener(mLauncher.mFocusHandler);
         CellLayout.LayoutParams lp = new CellLayout.LayoutParams((mWorkspace.getCountX() - 1)/2, mWorkspace.getCountY() - 1, 1, 1);
         lp.canReorder = false;
         mWorkspace.addViewToCellLayout(allAppsButton, -1, allAppsButton.getId(), lp, true);
@@ -582,9 +534,6 @@ public class Workspace extends ViewGroup
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         switch (ev.getAction() & MotionEvent.ACTION_MASK) {
         case MotionEvent.ACTION_DOWN:
-            mXDown = ev.getX();
-            mYDown = ev.getY();
-            mTouchDownTime = System.currentTimeMillis();
             break;
         case MotionEvent.ACTION_POINTER_UP:
         case MotionEvent.ACTION_UP:
@@ -1064,9 +1013,6 @@ public class Workspace extends ViewGroup
 
         final State oldState = mState;
         final boolean oldStateIsNormal = (oldState == State.NORMAL);
-        final boolean oldStateIsSpringLoaded = (oldState == State.SPRING_LOADED);
-        final boolean oldStateIsNormalHidden = (oldState == State.NORMAL_HIDDEN);
-        final boolean oldStateIsOverviewHidden = (oldState == State.OVERVIEW_HIDDEN);
         final boolean oldStateIsOverview = (oldState == State.OVERVIEW);
         setState(state);
         final boolean stateIsNormal = (state == State.NORMAL);
@@ -1076,7 +1022,6 @@ public class Workspace extends ViewGroup
         final boolean stateIsOverview = (state == State.OVERVIEW);
         float finalBackgroundAlpha = (stateIsSpringLoaded || stateIsOverview) ? 1.0f : 0f;
         float finalOverviewPanelAlpha = stateIsOverview ? 1f : 0f;
-        float finalSearchBarAlpha = !stateIsNormal ? 0f : 1f;
         float finalWorkspaceTranslationY = stateIsOverview || stateIsOverviewHidden ?
                 getOverviewModeTranslationY() : 0;
 
@@ -1468,10 +1413,6 @@ public class Workspace extends ViewGroup
                 DragController.DRAG_ACTION_MOVE, dragVisualizeOffset, dragRect, scale);
         dv.setIntrinsicIconScaleFactor(source.getIntrinsicIconScaleFactor());
 
-        if (child.getParent() instanceof ShortcutAndWidgetContainer) {
-            mDragSourceInternal = (ShortcutAndWidgetContainer) child.getParent();
-        }
-
         b.recycle();
     }
 
@@ -1668,8 +1609,7 @@ public class Workspace extends ViewGroup
                     lp.cellVSpan = item.spanY;
                     lp.isLockedToGrid = true;
 
-                    if (container == Favorites.CONTAINER_DESKTOP &&
-                            cell instanceof LauncherAppWidgetHostView) {
+                    if (cell instanceof LauncherAppWidgetHostView) {
                         final CellLayout cellLayout = dropTargetLayout;
                         // We post this call so that the widget has a chance to be placed
                         // in its final location
@@ -1678,17 +1618,12 @@ public class Workspace extends ViewGroup
                         AppWidgetProviderInfo pinfo = hostView.getAppWidgetInfo();
                         if (pinfo != null &&
                                 pinfo.resizeMode != AppWidgetProviderInfo.RESIZE_NONE) {
-                            final Runnable addResizeFrame = new Runnable() {
+                            resizeRunnable = new Runnable() {
                                 public void run() {
                                     DragLayer dragLayer = mLauncher.getDragLayer();
                                     dragLayer.addResizeFrame(info, hostView, cellLayout);
                                 }
                             };
-                            resizeRunnable = (new Runnable() {
-                                public void run() {
-                                    mDelayedResizeRunnable = addResizeFrame;
-                                }
-                            });
                         }
                     }
 
@@ -2177,17 +2112,13 @@ public class Workspace extends ViewGroup
             View finalView = pendingInfo.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPWIDGET
                     ? ((PendingAddWidgetInfo) pendingInfo).boundWidget : null;
 
-            if (finalView instanceof AppWidgetHostView && updateWidgetSize) {
+            if (finalView != null && updateWidgetSize) {
                 AppWidgetHostView awhv = (AppWidgetHostView) finalView;
                 AppWidgetResizeFrame.updateWidgetSizeRanges(awhv, mLauncher, item.spanX,
                         item.spanY);
             }
 
             int animationStyle = ANIMATE_INTO_POSITION_AND_DISAPPEAR;
-            if (pendingInfo.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPWIDGET &&
-                    ((PendingAddWidgetInfo) pendingInfo).info.configure != null) {
-                animationStyle = ANIMATE_INTO_POSITION_AND_REMAIN;
-            }
             animateWidgetDrop(info, cellLayout, d.dragView, onAnimationCompleteRunnable,
                     animationStyle, finalView, true);
         } else {
@@ -2719,7 +2650,7 @@ public class Workspace extends ViewGroup
                                     final UserHandleCompat user) {
         final ViewGroup layout = mWorkspace.getShortcutsAndWidgets();
 
-        final HashMap<ItemInfo, View> children = new HashMap<ItemInfo, View>();
+        final ArrayMap<ItemInfo, View> children = new ArrayMap<>();
         for (int j = 0; j < layout.getChildCount(); j++) {
             final View view = layout.getChildAt(j);
             children.put((ItemInfo) view.getTag(), view);

@@ -60,28 +60,28 @@ public class DynamicGrid {
         DEFAULT_ICON_SIZE_PX = pxFromDp(DEFAULT_ICON_SIZE_DP, dm);
         // Our phone profiles include the bar sizes in each orientation
         deviceProfiles.add(new DeviceProfile("Super Short Stubby",
-                255, 300,  6, 4,  48, 13));
+                255, 300,  5, 4,  48, 13));
         deviceProfiles.add(new DeviceProfile("Shorter Stubby",
-                255, 400,  6, 4,  48, 13));
+                255, 400,  5, 4,  48, 13));
         deviceProfiles.add(new DeviceProfile("Short Stubby",
-                275, 420,  7, 5,  48, 13));
+                275, 420,  6, 5,  48, 13));
         deviceProfiles.add(new DeviceProfile("Stubby",
-                255, 450,  7, 5,  48, 13));
+                255, 450,  6, 5,  48, 13));
         deviceProfiles.add(new DeviceProfile("Nexus S",
-                296, 491.33f,  7, 5,  48, 13));
+                296, 491.33f,  6, 5,  48, 13));
         deviceProfiles.add(new DeviceProfile("Nexus 4",
-                335, 592,  7, 5,  DEFAULT_ICON_SIZE_DP, 13));
+                335, 592,  6, 5,  DEFAULT_ICON_SIZE_DP, 13));
         deviceProfiles.add(new DeviceProfile("Nexus 5",
-                359, 592,  7, 5,  DEFAULT_ICON_SIZE_DP, 13));
+                359, 592,  6, 5,  DEFAULT_ICON_SIZE_DP, 13));
         deviceProfiles.add(new DeviceProfile("Large Phone",
-                406, 694,  8, 6,  64, 14.4f));
+                406, 694,  7, 6,  64, 14.4f));
         // The tablet profile is odd in that the landscape orientation
         // also includes the nav bar on the side
         deviceProfiles.add(new DeviceProfile("Nexus 7",
-                575, 904,  10, 7,  72, 14.4f));
+                575, 904,  8, 7,  72, 14.4f));
         // Larger tablet profiles always have system bars on the top & bottom
         deviceProfiles.add(new DeviceProfile("Nexus 10",
-                727, 1207,  10, 10,  76, 14.4f));
+                727, 1207,  11, 9,  76, 14.4f));
         deviceProfiles.add(new DeviceProfile("20-inch Tablet",
                 1527, 2527,  20, 20,  100, 20));
         mMinWidth = dpiFromPx(minWidthPx, dm);

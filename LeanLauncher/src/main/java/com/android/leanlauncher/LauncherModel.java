@@ -45,10 +45,13 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.provider.BaseColumns;
+import android.support.v4.util.ArrayMap;
+import android.support.v4.util.SparseArrayCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.Pair;
+import android.util.SparseArray;
 
 import com.android.leanlauncher.compat.AppWidgetManagerCompat;
 import com.android.leanlauncher.compat.LauncherActivityInfoCompat;
@@ -71,6 +74,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -90,7 +94,7 @@ public class LauncherModel extends BroadcastReceiver
     // true = use a "More Apps" folder for non-workspace apps on upgrade
     // false = strew non-workspace apps across the workspace on upgrade
     public static final int LOADER_FLAG_NONE = 0;
-    public static final int LOADER_FLAG_CLEAR_WORKSPACE = 1 << 0;
+    public static final int LOADER_FLAG_CLEAR_WORKSPACE = 1;
 
     private static final int ITEMS_CHUNK = 6; // batch size for the workspace icons
 
@@ -139,7 +143,7 @@ public class LauncherModel extends BroadcastReceiver
 
     // sBgItemsIdMap maps *all* the ItemInfos (shortcuts and widgets) created by
     // LauncherModel to their ids
-    static final HashMap<Long, ItemInfo> sBgItemsIdMap = new HashMap<Long, ItemInfo>();
+    static final ArrayMap<Long, ItemInfo> sBgItemsIdMap = new ArrayMap<>();
 
     // sBgWorkspaceItems is passed to bindItems, which expects a list of all folders and shortcuts
     //       created by LauncherModel that are directly on the home screen (however, no widgets or
@@ -151,13 +155,13 @@ public class LauncherModel extends BroadcastReceiver
         new ArrayList<LauncherAppWidgetInfo>();
 
     // sBgDbIconCache is the set of ItemInfos that need to have their icons updated in the database
-    static final HashMap<Object, byte[]> sBgDbIconCache = new HashMap<Object, byte[]>();
+    static final ArrayMap<Object, byte[]> sBgDbIconCache = new ArrayMap<>();
 
     static long sBgWorkspaceScreenId;
 
     // sPendingPackages is a set of packages which could be on sdcard and are not available yet
-    static final HashMap<UserHandleCompat, HashSet<String>> sPendingPackages =
-            new HashMap<UserHandleCompat, HashSet<String>>();
+    static final ArrayMap<UserHandleCompat, HashSet<String>> sPendingPackages =
+            new ArrayMap<>();
 
     // </ only access in worker thread >
 
@@ -190,7 +194,6 @@ public class LauncherModel extends BroadcastReceiver
         public void bindComponentsRemoved(ArrayList<String> packageNames,
                         ArrayList<AppInfo> appInfos, UserHandleCompat user, int reason);
         public void bindPackagesUpdated(ArrayList<Object> widgetsAndShortcuts);
-        public void dumpLogsToLocalData();
     }
 
     public interface ItemInfoFilter {
@@ -356,9 +359,7 @@ public class LauncherModel extends BroadcastReceiver
                 final long workspaceScreenId = loadWorkspaceDb(context);
 
                 synchronized(sBgLock) {
-                    Iterator<ItemInfo> iter = workspaceApps.iterator();
-                    while (iter.hasNext()) {
-                        ItemInfo a = iter.next();
+                    for (ItemInfo a : workspaceApps) {
                         final String name = a.title.toString();
                         final Intent launchIntent = a.getIntent();
 
@@ -502,10 +503,7 @@ public class LauncherModel extends BroadcastReceiver
             // the modelItem needs to match up perfectly with item if our model is
             // to be consistent with the database-- for now, just require
             // modelItem == item or the equality check above
-            String msg = "item: " + ((item != null) ? item.toString() : "null") +
-                    "modelItem: " +
-                    ((modelItem != null) ? modelItem.toString() : "null") +
-                    "Error: ItemInfo passed to checkItemInfo doesn't match original";
+            String msg = "item: " + ((item != null) ? item.toString() : "null") + "modelItem: " + (modelItem.toString()) + "Error: ItemInfo passed to checkItemInfo doesn't match original";
             RuntimeException e = new RuntimeException(msg);
             if (stackTrace != null) {
                 e.setStackTrace(stackTrace);
@@ -2567,16 +2565,6 @@ public class LauncherModel extends BroadcastReceiver
                     }
                 }
             });
-
-            // Write all the logs to disk
-            mHandler.post(new Runnable() {
-                public void run() {
-                    Callbacks cb = getCallback();
-                    if (callbacks == cb) {
-                        callbacks.dumpLogsToLocalData();
-                    }
-                }
-            });
         }
     }
 
@@ -2923,7 +2911,7 @@ public class LauncherModel extends BroadcastReceiver
         return info;
     }
 
-    boolean queueIconToBeChecked(HashMap<Object, byte[]> cache, ShortcutInfo info, Cursor c,
+    boolean queueIconToBeChecked(Map<Object, byte[]> cache, ShortcutInfo info, Cursor c,
             int iconIndex) {
         // If apps can't be on SD, don't even bother.
         if (!mAppsCanBeOnRemoveableStorage) {

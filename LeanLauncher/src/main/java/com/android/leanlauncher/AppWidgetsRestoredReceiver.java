@@ -19,7 +19,7 @@ import java.util.List;
 
 public class AppWidgetsRestoredReceiver extends BroadcastReceiver {
 
-    private static final String TAG = "AppWidgetsRestoredReceiver";
+    private static final String TAG = "AppWidgetsRestored";
 
     @Override
     public void onReceive(Context context, Intent intent) {
