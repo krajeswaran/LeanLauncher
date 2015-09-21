@@ -97,8 +97,8 @@ public class IconCache {
     private final PackageManager mPackageManager;
     private final UserManagerCompat mUserManager;
     private final LauncherAppsCompat mLauncherApps;
-    private final HashMap<CacheKey, CacheEntry> mCache =
-            new HashMap<CacheKey, CacheEntry>(INITIAL_ICON_CACHE_CAPACITY);
+    private final ArrayMap<CacheKey, CacheEntry> mCache =
+            new ArrayMap<>(INITIAL_ICON_CACHE_CAPACITY);
     private int mIconDpi;
 
     public IconCache(Context context) {
@@ -229,7 +229,7 @@ public class IconCache {
      * Fill in "application" with the icon and label for "info."
      */
     public synchronized void getTitleAndIcon(AppInfo application, LauncherActivityInfoCompat info,
-            HashMap<Object, CharSequence> labelCache) {
+            ArrayMap<Object, CharSequence> labelCache) {
         CacheEntry entry = cacheLocked(application.componentName, info, labelCache,
                 info.getUser(), false);
 
@@ -283,7 +283,7 @@ public class IconCache {
     }
 
     public synchronized Bitmap getIcon(ComponentName component, LauncherActivityInfoCompat info,
-            HashMap<Object, CharSequence> labelCache) {
+            ArrayMap<Object, CharSequence> labelCache) {
         if (info == null || component == null) {
             return null;
         }
@@ -301,7 +301,7 @@ public class IconCache {
      * This method is not thread safe, it must be called from a synchronized method.
      */
     private CacheEntry cacheLocked(ComponentName componentName, LauncherActivityInfoCompat info,
-            HashMap<Object, CharSequence> labelCache, UserHandleCompat user, boolean usePackageIcon) {
+            ArrayMap<Object, CharSequence> labelCache, UserHandleCompat user, boolean usePackageIcon) {
         CacheKey cacheKey = new CacheKey(componentName, user);
         CacheEntry entry = mCache.get(cacheKey);
         if (entry == null) {
@@ -397,8 +397,8 @@ public class IconCache {
         return entry;
     }
 
-    public synchronized HashMap<ComponentName,Bitmap> getAllIcons() {
-        HashMap<ComponentName,Bitmap> set = new HashMap<ComponentName,Bitmap>();
+    public synchronized ArrayMap<ComponentName,Bitmap> getAllIcons() {
+        ArrayMap<ComponentName,Bitmap> set = new ArrayMap<>();
         for (CacheKey ck : mCache.keySet()) {
             final CacheEntry e = mCache.get(ck);
             set.put(ck.componentName, e.icon);

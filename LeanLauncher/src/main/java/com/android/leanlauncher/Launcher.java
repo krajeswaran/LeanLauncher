@@ -105,20 +105,14 @@ import com.android.leanlauncher.compat.UserManagerCompat;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -145,12 +139,6 @@ public class Launcher extends Activity
 
     private static final int REQUEST_BIND_APPWIDGET = 11;
     private static final int REQUEST_RECONFIGURE_APPWIDGET = 12;
-
-    /**
-     * IntentStarter uses request codes starting with this. This must be greater than all activity
-     * request codes used internally.
-     */
-    protected static final int REQUEST_LAST = 100;
 
     static final String EXTRA_SHORTCUT_DUPLICATE = "duplicate";
 
@@ -199,9 +187,6 @@ public class Launcher extends Activity
     static final int APPWIDGET_HOST_ID = 1024;
     public static final int EXIT_SPRINGLOADED_MODE_SHORT_TIMEOUT = 300;
     private static final int ON_ACTIVITY_RESULT_ANIMATION_DELAY = 500;
-    private static final int ACTIVITY_START_DELAY = 1000;
-
-    private static final Object sLock = new Object();
 
     private SerializableSparseArray<Integer> mItemIdToViewId = new SerializableSparseArray<Integer>();
     private static final AtomicInteger sNextGeneratedId = new AtomicInteger(1);
@@ -218,7 +203,6 @@ public class Launcher extends Activity
     private View mLauncherView;
     private DragLayer mDragLayer;
     private DragController mDragController;
-    private View mWeightWatcher;
 
     private AppWidgetManagerCompat mAppWidgetManager;
     private LauncherAppWidgetHost mAppWidgetHost;
@@ -275,8 +259,7 @@ public class Launcher extends Activity
     private final int mAdvanceStagger = 250;
     private long mAutoAdvanceSentTime;
     private long mAutoAdvanceTimeLeft = -1;
-    private HashMap<View, AppWidgetProviderInfo> mWidgetsToAdvance =
-        new HashMap<View, AppWidgetProviderInfo>();
+    private ArrayMap<View, AppWidgetProviderInfo> mWidgetsToAdvance = new ArrayMap<>();
 
     // Determines how long to wait after a rotation before restoring the screen orientation to
     // match the sensor state.
@@ -284,13 +267,7 @@ public class Launcher extends Activity
 
     private Drawable mWorkspaceBackgroundDrawable;
 
-    private static final boolean DISABLE_SYNCHRONOUS_BINDING_CURRENT_PAGE = false;
-
     static final ArrayList<String> sDumpLogs = new ArrayList<String>();
-    static Date sDateStamp = new Date();
-    static DateFormat sDateFormat =
-            DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
-    static long sRunStart = System.currentTimeMillis();
 
     // We only want to get the SharedPreferences once since it does an FS stat each time we get
     // it from the context.
@@ -1918,13 +1895,7 @@ public class Launcher extends Activity
             }
         } else if (info.installProgress < 0) {
             // The install has not been queued
-            final String packageName = info.providerName.getPackageName();
-            showBrokenAppInstallDialog(packageName,
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        startActivitySafely(v, LauncherModel.getMarketIntent(packageName), info);
-                    }
-                });
+            startActivitySafely(v, LauncherModel.getMarketIntent(info.providerName.getPackageName()), info);
         } else {
             // Download has started.
             final String packageName = info.providerName.getPackageName();
@@ -1945,23 +1916,6 @@ public class Launcher extends Activity
         } else {
             showAllApps(true, AppsCustomizePagedView.ContentType.Applications, false);
         }
-    }
-
-    private void showBrokenAppInstallDialog(final String packageName,
-            DialogInterface.OnClickListener onSearchClickListener) {
-        new AlertDialog.Builder(this)
-            .setTitle(R.string.abandoned_promises_title)
-            .setMessage(R.string.abandoned_promise_explanation)
-            .setPositiveButton(R.string.abandoned_search, onSearchClickListener)
-            .setNeutralButton(R.string.abandoned_clean_this,
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        final UserHandleCompat user = UserHandleCompat.myUserHandle();
-                        mWorkspace.removeAbandonedPromise(packageName, user);
-                    }
-                })
-            .create().show();
-        return;
     }
 
     /**
@@ -1985,22 +1939,6 @@ public class Launcher extends Activity
                 error = R.string.safemode_shortcut_error;
             }
             Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        final Intent intent = shortcut.intent;
-
-        // Check for abandoned promise
-        if ((v instanceof BubbleTextView)
-                && shortcut.isPromise()
-                && !shortcut.hasStatusFlag(ShortcutInfo.FLAG_INSTALL_SESSION_ACTIVE)) {
-            showBrokenAppInstallDialog(
-                    shortcut.getTargetComponent().getPackageName(),
-                    new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            startAppShortcutOrInfoActivity(v);
-                        }
-                    });
             return;
         }
 
@@ -3035,30 +2973,6 @@ public class Launcher extends Activity
         mWorkspace.addNewWorkspace();
     }
 
-    private boolean shouldShowWeightWatcher() {
-        String spKey = LauncherAppState.getSharedPreferencesKey();
-        SharedPreferences sp = getSharedPreferences(spKey, Context.MODE_PRIVATE);
-        boolean show = sp.getBoolean(SHOW_WEIGHT_WATCHER, SHOW_WEIGHT_WATCHER_DEFAULT);
-
-        return show;
-    }
-
-    private void toggleShowWeightWatcher() {
-        String spKey = LauncherAppState.getSharedPreferencesKey();
-        SharedPreferences sp = getSharedPreferences(spKey, Context.MODE_PRIVATE);
-        boolean show = sp.getBoolean(SHOW_WEIGHT_WATCHER, true);
-
-        show = !show;
-
-        SharedPreferences.Editor editor = sp.edit();
-        editor.putBoolean(SHOW_WEIGHT_WATCHER, show);
-        editor.commit();
-
-        if (mWeightWatcher != null) {
-            mWeightWatcher.setVisibility(show ? View.VISIBLE : View.GONE);
-        }
-    }
-
     public void bindAppsAdded(final long newScreen,
                               final ArrayList<ItemInfo> addNotAnimated,
                               final ArrayList<ItemInfo> addAnimated,
@@ -3108,9 +3022,6 @@ public class Launcher extends Activity
             return;
         }
 
-        // Get the list of added shortcuts and intersect them with the set of shortcuts here
-        final AnimatorSet anim = LauncherAnimUtils.createAnimatorSet();
-        final Collection<Animator> bounceAnims = new ArrayList<Animator>();
         Workspace workspace = mWorkspace;
         for (int i = start; i < end; i++) {
             final ItemInfo item = shortcuts.get(i);

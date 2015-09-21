@@ -361,7 +361,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         super.onLayout(changed, l, t, r, b);
 
         if (!isDataReady()) {
-            if ((LauncherAppState.isDisableAllApps() || !mApps.isEmpty()) && !mWidgets.isEmpty()) {
+            if (!mApps.isEmpty() && !mWidgets.isEmpty()) {
                 post(new Runnable() {
                     // This code triggers requestLayout so must be posted outside of the
                     // layout pass.

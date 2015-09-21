@@ -118,7 +118,7 @@ public class PackageInstallerCompatV16 extends PackageInstallerCompat {
                         + " for package: " + packageName);
 
         }
-        editor.commit();
+        editor.apply();
 
         if (!mUseQueue) {
             if (mReplayPending) {

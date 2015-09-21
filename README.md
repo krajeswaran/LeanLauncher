@@ -40,13 +40,11 @@ See LICENSE
 Todo
 ====
 
--[] layout adjustments: sparse array thingy, tablet layout landscape, wierd margins on bottom, widget overview mode not exiting
+-[] layout adjustments:  widget overview mode not exiting
 -[] swipe to all apps, recent tasks
--[] check perms
 -[] add monkey test
 -[] lint fixes
 -[] commit, publish
 -[] Add support for icon theme
 -[] Use a less complicated backend
--[] Add support for recently launched row
 -[] Add Preferences: import/export settings, all apps button behaviour, icon theme, layout cells?

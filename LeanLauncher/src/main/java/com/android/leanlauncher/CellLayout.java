@@ -27,13 +27,12 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Parcelable;
+import android.support.v4.util.ArrayMap;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
@@ -49,7 +48,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Stack;
 
 public class CellLayout extends ViewGroup {
@@ -80,11 +78,9 @@ public class CellLayout extends ViewGroup {
 
     boolean[][] mOccupied;
     boolean[][] mTmpOccupied;
-    private boolean mLastDownOnOccupiedCell = false;
 
     private OnTouchListener mInterceptTouchListener;
 
-    private float FOREGROUND_ALPHA_DAMPER = 0.65f;
     private int mForegroundAlpha = 0;
     private float mBackgroundAlpha;
     private float mBackgroundAlphaMultiplier = 1.0f;
@@ -120,19 +116,22 @@ public class CellLayout extends ViewGroup {
 
     private final FastBitmapView mTouchFeedbackView;
 
-    private HashMap<CellLayout.LayoutParams, Animator> mReorderAnimators = new
-            HashMap<CellLayout.LayoutParams, Animator>();
-    private HashMap<View, ReorderPreviewAnimation>
-            mShakeAnimators = new HashMap<View, ReorderPreviewAnimation>();
+    private ArrayMap<LayoutParams, Animator> mReorderAnimators = new ArrayMap<>();
+    private ArrayMap<View, ReorderPreviewAnimation> mShakeAnimators = new ArrayMap<>();
 
     private boolean mItemPlacementDirty = false;
+
+    public void setIsWorkspace(boolean mIsWorkspace) {
+        this.mIsWorkspace = mIsWorkspace;
+    }
+
+    private boolean mIsWorkspace = false;
 
     // When a drag operation is in progress, holds the nearest cell to the touch point
     private final int[] mDragCell = new int[2];
 
     private boolean mDragging = false;
 
-    private TimeInterpolator mEaseOutInterpolator;
     private ShortcutAndWidgetContainer mShortcutsAndWidgets;
 
     public static final int MODE_SHOW_REORDER_HINT = 0;
@@ -140,8 +139,6 @@ public class CellLayout extends ViewGroup {
     public static final int MODE_ON_DROP = 2;
     public static final int MODE_ON_DROP_EXTERNAL = 3;
     public static final int MODE_ACCEPT_DROP = 4;
-    private static final boolean DESTRUCTIVE_REORDER = false;
-    private static final boolean DEBUG_VISUALIZE_OCCUPIED = false;
 
     static final int LANDSCAPE = 0;
     static final int PORTRAIT = 1;
@@ -216,7 +213,7 @@ public class CellLayout extends ViewGroup {
         mActiveGlowBackground.setFilterBitmap(true);
 
         // Initialize the data structures used for the drag visualization.
-        mEaseOutInterpolator = new DecelerateInterpolator(2.5f); // Quint ease out
+        TimeInterpolator easeOutInterpolator = new DecelerateInterpolator(2.5f);
         mDragCell[0] = mDragCell[1] = -1;
         for (int i = 0; i < mDragOutlines.length; i++) {
             mDragOutlines[i] = new Rect(-1, -1, -1, -1);
@@ -235,7 +232,7 @@ public class CellLayout extends ViewGroup {
         for (int i = 0; i < mDragOutlineAnims.length; i++) {
             final InterruptibleInOutAnimator anim =
                 new InterruptibleInOutAnimator(this, duration, fromAlphaValue, toAlphaValue);
-            anim.getAnimator().setInterpolator(mEaseOutInterpolator);
+            anim.getAnimator().setInterpolator(easeOutInterpolator);
             final int thisIndex = i;
             anim.getAnimator().addUpdateListener(new AnimatorUpdateListener() {
                 public void onAnimationUpdate(ValueAnimator animation) {
@@ -281,7 +278,7 @@ public class CellLayout extends ViewGroup {
 
         mTouchFeedbackView = new FastBitmapView(context);
         // Make the feedback view large enough to hold the blur bitmap.
-        addView(mTouchFeedbackView, (int) (grid.cellWidthPx * 1.5), (int) (grid.cellHeightPx * 1.5));
+        addView(mTouchFeedbackView, (int) (grid.cellWidthPx * 1.2), (int) (grid.cellHeightPx * 1.2));
         addView(mShortcutsAndWidgets);
     }
 
@@ -335,7 +332,7 @@ public class CellLayout extends ViewGroup {
             mOverScrollForegroundDrawable = mOverScrollRight;
         }
 
-        r *= FOREGROUND_ALPHA_DAMPER;
+        r *= 0.65f;
         mForegroundAlpha = (int) Math.round((r * 255));
         mOverScrollForegroundDrawable.setAlpha(mForegroundAlpha);
         invalidate();
@@ -421,23 +418,6 @@ public class CellLayout extends ViewGroup {
                 final Bitmap b = (Bitmap) mDragOutlineAnims[i].getTag();
                 paint.setAlpha((int)(alpha + .5f));
                 canvas.drawBitmap(b, null, mTempRect, paint);
-            }
-        }
-
-        if (DEBUG_VISUALIZE_OCCUPIED) {
-            int[] pt = new int[2];
-            ColorDrawable cd = new ColorDrawable(Color.RED);
-            cd.setBounds(0, 0,  mCellWidth, mCellHeight);
-            for (int i = 0; i < mCountX; i++) {
-                for (int j = 0; j < mCountY; j++) {
-                    if (mOccupied[i][j]) {
-                        cellToPoint(i, j, pt);
-                        canvas.save();
-                        canvas.translate(pt[0], pt[1]);
-                        cd.draw(canvas);
-                        canvas.restore();
-                    }
-                }
             }
         }
     }
@@ -760,10 +740,8 @@ public class CellLayout extends ViewGroup {
         int numHeightGaps = mCountY - 1;
 
         if (mOriginalWidthGap < 0 || mOriginalHeightGap < 0) {
-            int hSpace = childWidthSize;
-            int vSpace = childHeightSize;
-            int hFreeSpace = hSpace - (mCountX * mCellWidth);
-            int vFreeSpace = vSpace - (mCountY * mCellHeight);
+            int hFreeSpace = childWidthSize - (mCountX * mCellWidth);
+            int vFreeSpace = childHeightSize - (mCountY * mCellHeight);
             mWidthGap = Math.min(mMaxGap, numWidthGaps > 0 ? (hFreeSpace / numWidthGaps) : 0);
             mHeightGap = Math.min(mMaxGap,numHeightGaps > 0 ? (vFreeSpace / numHeightGaps) : 0);
             mShortcutsAndWidgets.setCellDimensions(mCellWidth, mCellHeight, mWidthGap,
@@ -918,7 +896,7 @@ public class CellLayout extends ViewGroup {
             va.addUpdateListener(new AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator animation) {
-                    float r = ((Float) animation.getAnimatedValue()).floatValue();
+                    float r = (Float) animation.getAnimatedValue();
                     lp.x = (int) ((1 - r) * oldX + r * newX);
                     lp.y = (int) ((1 - r) * oldY + r * newY);
                     child.requestLayout();
@@ -2004,7 +1982,7 @@ public class CellLayout extends ViewGroup {
     private void animateItemsToSolution(ItemConfiguration solution, View dragView, boolean
             commitDragView) {
 
-        boolean[][] occupied = DESTRUCTIVE_REORDER ? mOccupied : mTmpOccupied;
+        boolean[][] occupied = mTmpOccupied;
         for (int i = 0; i < mCountX; i++) {
             for (int j = 0; j < mCountY; j++) {
                 occupied[i][j] = false;
@@ -2018,7 +1996,7 @@ public class CellLayout extends ViewGroup {
             CellAndSpan c = solution.map.get(child);
             if (c != null) {
                 animateChildToPosition(child, c.x, c.y, REORDER_ANIMATION_DURATION, 0,
-                        DESTRUCTIVE_REORDER, false);
+                        false, false);
                 markCellsForView(c.x, c.y, c.spanX, c.spanY, occupied, true);
             }
         }
@@ -2318,7 +2296,7 @@ public class CellLayout extends ViewGroup {
 
     void revertTempState() {
         completeAndClearReorderPreviewAnimations();
-        if (isItemPlacementDirty() && !DESTRUCTIVE_REORDER) {
+        if (isItemPlacementDirty()) {
             final int count = mShortcutsAndWidgets.getChildCount();
             for (int i = 0; i < count; i++) {
                 View child = mShortcutsAndWidgets.getChildAt(i);
@@ -2425,9 +2403,7 @@ public class CellLayout extends ViewGroup {
         }
 
         boolean foundSolution = true;
-        if (!DESTRUCTIVE_REORDER) {
-            setUseTempCoords(true);
-        }
+        setUseTempCoords(true);
 
         if (finalSolution != null) {
             result[0] = finalSolution.dragViewX;
@@ -2439,14 +2415,11 @@ public class CellLayout extends ViewGroup {
             // committing anything or animating anything as we just want to determine if a solution
             // exists
             if (mode == MODE_DRAG_OVER || mode == MODE_ON_DROP || mode == MODE_ON_DROP_EXTERNAL) {
-                if (!DESTRUCTIVE_REORDER) {
-                    copySolutionToTempState(finalSolution, dragView);
-                }
+                copySolutionToTempState(finalSolution, dragView);
                 setItemPlacementDirty(true);
                 animateItemsToSolution(finalSolution, dragView, mode == MODE_ON_DROP);
 
-                if (!DESTRUCTIVE_REORDER &&
-                        (mode == MODE_ON_DROP || mode == MODE_ON_DROP_EXTERNAL)) {
+                if ((mode == MODE_ON_DROP || mode == MODE_ON_DROP_EXTERNAL)) {
                     commitTempPlacement();
                     completeAndClearReorderPreviewAnimations();
                     setItemPlacementDirty(false);
@@ -2460,7 +2433,7 @@ public class CellLayout extends ViewGroup {
             result[0] = result[1] = resultSpan[0] = resultSpan[1] = -1;
         }
 
-        if ((mode == MODE_ON_DROP || !foundSolution) && !DESTRUCTIVE_REORDER) {
+        if ((mode == MODE_ON_DROP || !foundSolution)) {
             setUseTempCoords(false);
         }
 
@@ -2476,8 +2449,8 @@ public class CellLayout extends ViewGroup {
     }
 
     private class ItemConfiguration {
-        HashMap<View, CellAndSpan> map = new HashMap<View, CellAndSpan>();
-        private HashMap<View, CellAndSpan> savedMap = new HashMap<View, CellAndSpan>();
+        ArrayMap<View, CellAndSpan> map = new ArrayMap<>();
+        private ArrayMap<View, CellAndSpan> savedMap = new ArrayMap<View, CellAndSpan>();
         ArrayList<View> sortedViews = new ArrayList<View>();
         ArrayList<View> intersectingViews;
         boolean isSolution = false;
@@ -2699,7 +2672,6 @@ public class CellLayout extends ViewGroup {
                 // intersecting
                 intersectX = -1;
                 intersectY = -1;
-                continue;
             }
         }
 
@@ -3147,9 +3119,5 @@ out:            for (int i = x; i < x + spanX - 1 && x < xCount; i++) {
             return "Cell[view=" + (cell == null ? "null" : cell.getClass())
                     + ", x=" + cellX + ", y=" + cellY + "]";
         }
-    }
-
-    public boolean lastDownOnOccupiedCell() {
-        return mLastDownOnOccupiedCell;
     }
 }

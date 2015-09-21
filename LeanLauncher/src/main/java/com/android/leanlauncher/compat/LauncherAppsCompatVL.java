@@ -24,10 +24,10 @@ import android.content.pm.LauncherApps;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.UserHandle;
+import android.support.v4.util.ArrayMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +36,7 @@ public class LauncherAppsCompatVL extends LauncherAppsCompat {
     private LauncherApps mLauncherApps;
 
     private Map<OnAppsChangedCallbackCompat, WrappedCallback> mCallbacks
-            = new HashMap<OnAppsChangedCallbackCompat, WrappedCallback>();
+            = new ArrayMap<>();
 
     LauncherAppsCompatVL(Context context) {
         super();

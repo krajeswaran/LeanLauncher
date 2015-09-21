@@ -374,7 +374,7 @@ public class LauncherProvider extends ContentProvider {
             SharedPreferences sp = mContext.getSharedPreferences(spKey, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
             editor.putBoolean(EMPTY_DATABASE_CREATED, true);
-            editor.commit();
+            editor.apply();
         }
 
         @Override

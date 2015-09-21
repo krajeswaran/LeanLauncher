@@ -317,8 +317,8 @@ public class Workspace extends ViewGroup
         LauncherAppState app = LauncherAppState.getInstance();
         mIconCache = app.getIconCache();
         setWillNotDraw(false);
-        setClipChildren(true);
-        setClipToPadding(true);
+        setClipChildren(false);
+        setClipToPadding(false);
         setChildrenDrawnWithCacheEnabled(true);
 
         setupLayoutTransition();
@@ -400,6 +400,8 @@ public class Workspace extends ViewGroup
         mWorkspace.setOnClickListener(mLauncher);
         mWorkspace.setSoundEffectsEnabled(false);
 		mWorkspace.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
+        mWorkspace.setIsWorkspace(true);
+        mWorkspace.setClipToPadding(true);
 
         // Add an all apps Icon
         addAllAppsIcon();
@@ -484,7 +486,7 @@ public class Workspace extends ViewGroup
         TextView allAppsButton = (TextView)
                 inflater.inflate(R.layout.all_apps_button, mWorkspace, false);
         Drawable d = getResources().getDrawable(R.drawable.all_apps_button_icon);
-//        Utilities.resizeIconDrawable(d);
+        Utilities.resizeIconDrawable(d);
         allAppsButton.setCompoundDrawables(null, d, null, null);
         allAppsButton.setContentDescription(getResources().getString(R.string.all_apps_button_label));
 
@@ -539,7 +541,7 @@ public class Workspace extends ViewGroup
         case MotionEvent.ACTION_UP:
             if (mTouchState == PagedView.TOUCH_STATE_REST) {
                 final CellLayout currentPage = mWorkspace;
-                if (currentPage != null && !currentPage.lastDownOnOccupiedCell()) {
+                if (currentPage != null) {
                     onWallpaperTap(ev);
                 }
             }

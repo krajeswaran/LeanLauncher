@@ -29,8 +29,10 @@ import android.graphics.Rect;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.Gravity;
-import android.view.Surface;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewGroup.MarginLayoutParams;
@@ -72,7 +74,6 @@ public class DeviceProfile {
     float numColumns;
     float iconSize;
     private float iconTextSize;
-    private int iconDrawablePaddingOriginalPx;
 
     boolean isLandscape;
     boolean isTablet;
@@ -113,6 +114,7 @@ public class DeviceProfile {
     int searchBarSpaceHeightPx;
     int pageIndicatorHeightPx;
     int allAppsButtonVisualSize;
+    int navBarHeightPx;
 
     float dragViewScale;
 
@@ -180,7 +182,7 @@ public class DeviceProfile {
         DeviceProfile closestProfile = findClosestDeviceProfile(minWidth, minHeight, points);
 
         // Snap to the closest row count
-        numRows = closestProfile.numRows;
+        numRows = closestProfile.numRows + 3;
 
         // Snap to the closest column count
         numColumns = closestProfile.numColumns;
@@ -201,8 +203,6 @@ public class DeviceProfile {
             points.add(new DeviceProfileQuery(p, p.iconTextSize));
         }
         iconTextSize = invDistWeightedInterpolate(minWidth, minHeight, points);
-        iconDrawablePaddingOriginalPx =
-                res.getDimensionPixelSize(R.dimen.dynamic_grid_icon_drawable_padding);
         // AllApps uses the original non-scaled icon text size
         allAppsIconTextSizePx = DynamicGrid.pxFromDp(iconTextSize, dm);
 
@@ -210,6 +210,7 @@ public class DeviceProfile {
         updateFromConfiguration(context, res, wPx, hPx, awPx, ahPx);
         updateAvailableDimensions(context);
         allAppsButtonVisualSize = (int) DynamicGrid.DEFAULT_ICON_SIZE_PX;
+        navBarHeightPx = getNavBarHeight(context);
     }
 
     void addCallback(DeviceProfileCallbacks cb) {
@@ -220,23 +221,28 @@ public class DeviceProfile {
         mCallbacks.remove(cb);
     }
 
-    private int getDeviceOrientation(Context context) {
-        WindowManager windowManager =  (WindowManager)
-                context.getSystemService(Context.WINDOW_SERVICE);
-        Resources resources = context.getResources();
-        DisplayMetrics dm = resources.getDisplayMetrics();
-        Configuration config = resources.getConfiguration();
-        int rotation = windowManager.getDefaultDisplay().getRotation();
+    private int getNavBarHeight(Context context) {
+        int result = 0;
+        boolean hasMenuKey = ViewConfiguration.get(context).hasPermanentMenuKey();
+        boolean hasBackKey = KeyCharacterMap.deviceHasKey(KeyEvent.KEYCODE_BACK);
 
-        boolean isLandscape = (config.orientation == Configuration.ORIENTATION_LANDSCAPE) &&
-                (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180);
-        boolean isRotatedPortrait = (config.orientation == Configuration.ORIENTATION_PORTRAIT) &&
-                (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270);
-        if (isLandscape || isRotatedPortrait) {
-            return CellLayout.LANDSCAPE;
-        } else {
-            return CellLayout.PORTRAIT;
+        if(!hasMenuKey && !hasBackKey) {
+            //The device has a navigation bar
+            Resources resources = context.getResources();
+
+            int orientation = resources.getConfiguration().orientation;
+            int resourceId;
+            if (isTablet){
+                resourceId = resources.getIdentifier(orientation == Configuration.ORIENTATION_PORTRAIT ? "navigation_bar_height" : "navigation_bar_height_landscape", "dimen", "android");
+            }  else {
+                resourceId = resources.getIdentifier(orientation == Configuration.ORIENTATION_PORTRAIT ? "navigation_bar_height" : "navigation_bar_width", "dimen", "android");
+            }
+
+            if (resourceId > 0) {
+                return resources.getDimensionPixelSize(resourceId);
+            }
         }
+        return result;
     }
 
     private void updateAvailableDimensions(Context context) {
@@ -268,16 +274,14 @@ public class DeviceProfile {
         // Check to see if the icons fit in the new available height.  If not, then we need to
         // shrink the icon size.
         float scale = 1f;
-        int drawablePadding = iconDrawablePaddingOriginalPx;
-        updateIconSize(1f, drawablePadding, resources, dm);
+        updateIconSize(1f, 0, resources, dm);
         float usedHeight = (cellHeightPx * numRows);
 
         Rect workspacePadding = getWorkspacePadding();
         int maxHeight = (availableHeightPx - workspacePadding.top - workspacePadding.bottom);
         if (usedHeight > maxHeight) {
             scale = maxHeight / usedHeight;
-            drawablePadding = 0;
-            updateIconSize(scale, drawablePadding, resources, dm);
+            updateIconSize(scale, 0, resources, dm);
         }
 
         // Make the callbacks
@@ -295,15 +299,14 @@ public class DeviceProfile {
         // Search Bar
         searchBarSpaceWidthPx = Math.min(widthPx,
                 resources.getDimensionPixelSize(R.dimen.dynamic_grid_search_bar_max_width));
-        searchBarSpaceHeightPx = getStatusBarTopOffset()
-                + resources.getDimensionPixelSize(R.dimen.dynamic_grid_search_bar_height);
+        searchBarSpaceHeightPx = resources.getDimensionPixelSize(R.dimen.dynamic_grid_search_bar_height);
 
         // Calculate the actual text height
         Paint textPaint = new Paint();
         textPaint.setTextSize(iconTextSizePx);
         FontMetrics fm = textPaint.getFontMetrics();
         cellWidthPx = iconSizePx;
-        cellHeightPx = iconSizePx + iconDrawablePaddingPx + (int) Math.ceil(fm.bottom - fm.top);
+        cellHeightPx = iconSizePx;
         final float scaleDps = resources.getDimensionPixelSize(R.dimen.dragViewScale);
         dragViewScale = (iconSizePx + scaleDps) / iconSizePx;
 
@@ -424,46 +427,6 @@ public class DeviceProfile {
         }
     }
 
-    /** Returns the search bar bounds in the current orientation */
-    Rect getSearchBarBounds() {
-        return getSearchBarBounds(isLandscape ? CellLayout.LANDSCAPE : CellLayout.PORTRAIT);
-    }
-    /** Returns the search bar bounds in the specified orientation */
-    Rect getSearchBarBounds(int orientation) {
-        Rect bounds = new Rect();
-        if (orientation == CellLayout.LANDSCAPE &&
-                transposeLayoutWithOrientation) {
-            if (isLayoutRtl) {
-                bounds.set(availableWidthPx - searchBarSpaceHeightPx, edgeMarginPx,
-                        availableWidthPx, availableHeightPx - edgeMarginPx);
-            } else {
-                bounds.set(0, edgeMarginPx, searchBarSpaceHeightPx,
-                        availableHeightPx - edgeMarginPx);
-            }
-        } else {
-            if (isTablet()) {
-                // Pad the left and right of the workspace to ensure consistent spacing
-                // between all icons
-                int width = (orientation == CellLayout.LANDSCAPE)
-                        ? Math.max(widthPx, heightPx)
-                        : Math.min(widthPx, heightPx);
-                // XXX: If the icon size changes across orientations, we will have to take
-                //      that into account here too.
-                int gap = (int) ((width - 2 * edgeMarginPx -
-                        (numColumns * cellWidthPx)) / (2 * (numColumns + 1)));
-                bounds.set(edgeMarginPx + gap, getStatusBarTopOffset(),
-                        availableWidthPx - (edgeMarginPx + gap),
-                        searchBarSpaceHeightPx);
-            } else {
-                bounds.set(desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.left,
-                        getStatusBarTopOffset(),
-                        availableWidthPx - (desiredWorkspaceLeftRightMarginPx -
-                        defaultWidgetPadding.right), searchBarSpaceHeightPx);
-            }
-        }
-        return bounds;
-    }
-
     /** Returns the workspace padding in the specified orientation */
     Rect getWorkspacePadding() {
         return getWorkspacePadding(isLandscape ? CellLayout.LANDSCAPE : CellLayout.PORTRAIT);
@@ -498,7 +461,7 @@ public class DeviceProfile {
                 padding.set(desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.left,
                         getStatusBarTopOffset(),
                         desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.right,
-                        0);
+                        navBarHeightPx + searchBarSpaceHeightPx);
             }
         }
         return padding;
@@ -559,7 +522,7 @@ public class DeviceProfile {
         lp = (FrameLayout.LayoutParams) deleteDropTargetBar.getLayoutParams();
         if (hasVerticalBarLayout) {
             // Vertical search bar space
-            lp.gravity = Gravity.BOTTOM | Gravity.LEFT;
+            lp.gravity = Gravity.BOTTOM | Gravity.CENTER_VERTICAL;
             lp.width = searchBarSpaceHeightPx;
             lp.height = LayoutParams.WRAP_CONTENT;
 
@@ -576,7 +539,7 @@ public class DeviceProfile {
         // Layout the workspace
         Workspace workspace = (Workspace) launcher.findViewById(R.id.workspace);
         lp = (FrameLayout.LayoutParams) workspace.getLayoutParams();
-        lp.gravity = Gravity.CENTER;
+        lp.gravity = Gravity.BOTTOM;
         int orientation = isLandscape ? CellLayout.LANDSCAPE : CellLayout.PORTRAIT;
         Rect padding = getWorkspacePadding(orientation);
         workspace.setLayoutParams(lp);

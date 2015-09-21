@@ -29,6 +29,7 @@ local.properties
 gradle
 captures/
 usage.txt
+mapping.txt
 /*/local.properties
 /*/out
 /*/*/build

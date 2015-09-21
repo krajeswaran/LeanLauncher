@@ -150,7 +150,7 @@ s -->
     <string name="permlab_uninstall_shortcut">uninstall shortcuts</string>
     <!-- Permission description -->
     <string name="permdesc_uninstall_shortcut">Allows the app to remove
-        shortcuts without user intervention.</string>
+        shortcuts</string>
     <!-- Permission short label -->
     <string name="permlab_read_settings">read Home settings and shortcuts</string>
     <!-- Permission description -->

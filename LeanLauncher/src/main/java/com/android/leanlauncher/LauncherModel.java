@@ -46,6 +46,7 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 import android.provider.BaseColumns;
 import android.support.v4.util.ArrayMap;
+import android.support.v4.util.SimpleArrayMap;
 import android.support.v4.util.SparseArrayCompat;
 import android.text.TextUtils;
 import android.util.Log;
@@ -1162,12 +1163,12 @@ public class LauncherModel extends BroadcastReceiver
         private boolean mLoadAndBindStepFinished;
         private int mFlags;
 
-        private HashMap<Object, CharSequence> mLabelCache;
+        private ArrayMap<Object, CharSequence> mLabelCache;
 
         LoaderTask(Context context, boolean isLaunching, int flags) {
             mContext = context;
             mIsLaunching = isLaunching;
-            mLabelCache = new HashMap<Object, CharSequence>();
+            mLabelCache = new ArrayMap<Object, CharSequence>();
             mFlags = flags;
         }
 
@@ -2029,7 +2030,7 @@ public class LauncherModel extends BroadcastReceiver
             ArrayList<ItemInfo> workspaceItems = new ArrayList<ItemInfo>();
             ArrayList<LauncherAppWidgetInfo> appWidgets =
                     new ArrayList<LauncherAppWidgetInfo>();
-            HashMap<Long, ItemInfo> itemsIdMap = new HashMap<Long, ItemInfo>();
+            SimpleArrayMap<Long, ItemInfo> itemsIdMap = new SimpleArrayMap<>();
             synchronized (sBgLock) {
                 workspaceItems.addAll(sBgWorkspaceItems);
                 appWidgets.addAll(sBgAppWidgets);
@@ -2298,19 +2299,19 @@ public class LauncherModel extends BroadcastReceiver
             final int N = packages.length;
             switch (mOp) {
                 case OP_ADD:
-                    for (int i=0; i<N; i++) {
-                        if (DEBUG_LOADERS) Log.d(TAG, "mAllAppsList.addPackage " + packages[i]);
-                        mIconCache.remove(packages[i], mUser);
-                        mBgAllAppsList.addPackage(context, packages[i], mUser);
+                    for (String aPackage1 : packages) {
+                        if (DEBUG_LOADERS) Log.d(TAG, "mAllAppsList.addPackage " + aPackage1);
+                        mIconCache.remove(aPackage1, mUser);
+                        mBgAllAppsList.addPackage(context, aPackage1, mUser);
                     }
 
                     break;
                 case OP_UPDATE:
-                    for (int i=0; i<N; i++) {
-                        if (DEBUG_LOADERS) Log.d(TAG, "mAllAppsList.updatePackage " + packages[i]);
-                        mBgAllAppsList.updatePackage(context, packages[i], mUser);
+                    for (String aPackage1 : packages) {
+                        if (DEBUG_LOADERS) Log.d(TAG, "mAllAppsList.updatePackage " + aPackage1);
+                        mBgAllAppsList.updatePackage(context, aPackage1, mUser);
                         WidgetPreviewLoader.removePackageFromDb(
-                                mApp.getWidgetPreviewCacheDb(), packages[i]);
+                                mApp.getWidgetPreviewCacheDb(), aPackage1);
                     }
                     break;
                 case OP_REMOVE:
@@ -2351,8 +2352,7 @@ public class LauncherModel extends BroadcastReceiver
                 return;
             }
 
-            final HashMap<ComponentName, AppInfo> addedOrUpdatedApps =
-                    new HashMap<ComponentName, AppInfo>();
+            final ArrayMap<ComponentName, AppInfo> addedOrUpdatedApps = new ArrayMap<>();
 
             if (added != null) {
                 // Ensure that we add all the workspace applications to the db
@@ -2376,7 +2376,7 @@ public class LauncherModel extends BroadcastReceiver
                 mHandler.post(new Runnable() {
                     public void run() {
                         Callbacks cb = getCallback();
-                        if (callbacks == cb && cb != null) {
+                        if (callbacks == cb) {
                             callbacks.bindAppsUpdated(modifiedFinal);
                         }
                     }
@@ -2670,7 +2670,7 @@ public class LauncherModel extends BroadcastReceiver
      */
     public ShortcutInfo getShortcutInfo(PackageManager manager, Intent intent,
             UserHandleCompat user, Context context, Cursor c, int iconIndex, int titleIndex,
-            HashMap<Object, CharSequence> labelCache, boolean allowMissingTarget) {
+            ArrayMap<Object, CharSequence> labelCache, boolean allowMissingTarget) {
         if (user == null) {
             Log.d(TAG, "Null user found in getShortcutInfo");
             return null;
@@ -2678,7 +2678,7 @@ public class LauncherModel extends BroadcastReceiver
 
         ComponentName componentName = intent.getComponent();
         if (componentName == null) {
-            Log.d(TAG, "Missing component found in getShortcutInfo: " + componentName);
+            Log.d(TAG, "Missing component found in getShortcutInfo");
             return null;
         }
 
@@ -2986,12 +2986,12 @@ public class LauncherModel extends BroadcastReceiver
     }
     public static class ShortcutNameComparator implements Comparator<LauncherActivityInfoCompat> {
         private Collator mCollator;
-        private HashMap<Object, CharSequence> mLabelCache;
+        private ArrayMap<Object, CharSequence> mLabelCache;
         ShortcutNameComparator(PackageManager pm) {
-            mLabelCache = new HashMap<Object, CharSequence>();
+            mLabelCache = new ArrayMap<>();
             mCollator = Collator.getInstance();
         }
-        ShortcutNameComparator(HashMap<Object, CharSequence> labelCache) {
+        ShortcutNameComparator(ArrayMap<Object, CharSequence> labelCache) {
             mLabelCache = labelCache;
             mCollator = Collator.getInstance();
         }
@@ -3019,13 +3019,13 @@ public class LauncherModel extends BroadcastReceiver
     public static class WidgetAndShortcutNameComparator implements Comparator<Object> {
         private final AppWidgetManagerCompat mManager;
         private final PackageManager mPackageManager;
-        private final HashMap<Object, String> mLabelCache;
+        private final ArrayMap<Object, String> mLabelCache;
         private final Collator mCollator;
 
         WidgetAndShortcutNameComparator(Context context) {
             mManager = AppWidgetManagerCompat.getInstance(context);
             mPackageManager = context.getPackageManager();
-            mLabelCache = new HashMap<Object, String>();
+            mLabelCache = new ArrayMap<>();
             mCollator = Collator.getInstance();
         }
         public final int compare(Object a, Object b) {

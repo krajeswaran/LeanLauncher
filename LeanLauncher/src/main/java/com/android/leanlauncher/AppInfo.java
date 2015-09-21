@@ -20,6 +20,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.support.v4.util.ArrayMap;
 import android.util.Log;
 
 import com.android.leanlauncher.compat.LauncherActivityInfoCompat;
@@ -72,7 +73,7 @@ public class AppInfo extends ItemInfo {
      * Must not hold the Context.
      */
     public AppInfo(Context context, LauncherActivityInfoCompat info, UserHandleCompat user,
-            IconCache iconCache, HashMap<Object, CharSequence> labelCache) {
+            IconCache iconCache, ArrayMap<Object, CharSequence> labelCache) {
         this.componentName = info.getComponentName();
         this.container = ItemInfo.NO_ID;
 

@@ -28,6 +28,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.support.v4.util.ArrayMap;
 import android.util.Log;
 import com.android.leanlauncher.compat.AppWidgetManagerCompat;
 
@@ -38,7 +39,6 @@ import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -131,7 +131,7 @@ public class WidgetPreviewLoader {
     private final PaintCache mDefaultAppWidgetPreviewPaint = new PaintCache();
     private final BitmapFactoryOptionsCache mCachedBitmapFactoryOptions = new BitmapFactoryOptionsCache();
 
-    private final HashMap<String, WeakReference<Bitmap>> mLoadedPreviews = new HashMap<String, WeakReference<Bitmap>>();
+    private final ArrayMap<String, WeakReference<Bitmap>> mLoadedPreviews = new ArrayMap<>();
     private final ArrayList<SoftReference<Bitmap>> mUnusedBitmaps = new ArrayList<SoftReference<Bitmap>>();
 
     private final Context mContext;
@@ -166,23 +166,17 @@ public class WidgetPreviewLoader {
                 LauncherAppState.getSharedPreferencesKey(), Context.MODE_PRIVATE);
         final String lastVersionName = sp.getString(ANDROID_INCREMENTAL_VERSION_NAME_KEY, null);
         final String versionName = android.os.Build.VERSION.INCREMENTAL;
-        final boolean isLollipopOrGreater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
         if (!versionName.equals(lastVersionName)) {
             try {
                 // clear all the previews whenever the system version changes, to ensure that
                 // previews are up-to-date for any apps that might have been updated with the system
                 clearDb();
             } catch (SQLiteReadOnlyDatabaseException e) {
-                if (isLollipopOrGreater) {
-                    // Workaround for Bug. 18554839, if we fail to clear the db due to the read-only
-                    // issue, then ignore this error and leave the old previews
-                } else {
-                    throw e;
-                }
+                Log.e(TAG, "Error clearing widget preview db : " + e);
             } finally {
                 SharedPreferences.Editor editor = sp.edit();
                 editor.putString(ANDROID_INCREMENTAL_VERSION_NAME_KEY, versionName);
-                editor.commit();
+                editor.apply();
             }
         }
     }
