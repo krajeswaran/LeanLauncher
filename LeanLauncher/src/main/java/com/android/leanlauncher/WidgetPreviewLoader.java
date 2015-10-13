@@ -333,7 +333,7 @@ public class WidgetPreviewLoader {
         String output;
         if (o instanceof AppWidgetProviderInfo) {
             sb.append(WIDGET_PREFIX);
-            sb.append(((AppWidgetProviderInfo) o).toString());
+            sb.append(o.toString());
             output = sb.toString();
             sb.setLength(0);
         } else {

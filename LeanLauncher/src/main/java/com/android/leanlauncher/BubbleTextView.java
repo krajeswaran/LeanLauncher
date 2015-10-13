@@ -238,7 +238,7 @@ public class BubbleTextView extends TextView {
         Drawable top = getCompoundDrawables()[1];
 
         if (top instanceof PreloadIconDrawable) {
-            ((PreloadIconDrawable) top).applyTheme(getPreloaderTheme());
+            top.applyTheme(getPreloaderTheme());
         }
         mSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
     }

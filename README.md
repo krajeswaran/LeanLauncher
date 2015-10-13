@@ -1,8 +1,8 @@
 LeanLauncher
 ============
 
-Minimal, dumb launcher forked from AOSP's [launcher 3](https://android.googlesource.com/platform/packages/apps/Launcher3/). It basically removes features and clutter from Launcher 3,
-similar in experience to [Smart Launcher](https://play.google.com/store/apps/details?id=ginlemon.flowerfree).
+Minimal, dumb launcher forked from AOSP's [Launcher 3](https://android.googlesource.com/platform/packages/apps/Launcher3/). It basically removes 'fluffy' features and clutter from Launcher 3, adds a few enhancements/
+The idea is to make a launcher similar in experience to older versions of [Smart Launcher](https://play.google.com/store/apps/details?id=ginlemon.flowerfree).
 
 Why
 ---
@@ -15,16 +15,21 @@ Changelog
 =========
 
 * Migrated Launcher 3 to Android Studio/gradle project setup
-* No workspaces. Only one workspace
-* No Hotseat/"dock"
-* No folder support
-* No built-in wallpaper manager. You can pick wallpapers, but if you want to crop/adjust wallpapers you need an external app like G!Photos installed
-* No Backup settings to SD card. There is not much to backup anyway
-* No migration from old launcher settings
-* No welcome/first-run setup wizard
+* Support for Icon themes
+* Support for Swipe gestures
+* Removed extraneous permissions
+* Removed workspaces. Only one workspace
+* Removed Hotseat/"dock"
+* Removed folder support
+* Removed built-in wallpaper manager. You can still set wallpapers using an external app like G!Photos 
+* Removed Backup settings to SD card. There is not much to backup anyway
+* Removed migration from old launcher settings
+* Removed welcome/first-run setup wizard
+* Removed OEM support for launcher customisation
+* Removed hard-coded support for Quick search bar(Google search)
 * Apps will not be added to launcher on install, because of limited workspace
-* Basic performance optimizations from running Android lint
-* Cleaned up layouts, translations
+* Basic performance optimizations and code cleanup from running Android lint
+* Cleaned up project resources
 
 Credits
 =======
@@ -40,11 +45,14 @@ See LICENSE
 Todo
 ====
 
--[] layout adjustments:  widget overview mode not exiting
--[] swipe to all apps, recent tasks
--[] add monkey test
--[] lint fixes
--[] commit, publish
--[] Add support for icon theme
--[] Use a less complicated backend
--[] Add Preferences: import/export settings, all apps button behaviour, icon theme, layout cells?
+- [x] fix: bottom space for remove 
+- [x] fix: widget overview mode not exiting
+- [ ] Add support for icon theme
+- [ ] swipe to all apps, recent tasks
+- [ ] run del script
+- [ ] final proguard cfg
+- [ ] commit, publish
+- [ ] Use a less complicated backend
+- [ ] Add Preferences: import/export settings, all apps button behaviour, icon theme, layout cells?
+- [ ] better landscape support
+- [ ] Simple search bar for contacts/app

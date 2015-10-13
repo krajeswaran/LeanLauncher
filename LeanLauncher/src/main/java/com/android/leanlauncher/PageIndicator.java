@@ -100,7 +100,7 @@ public class PageIndicator extends LinearLayout {
             new Throwable().printStackTrace();
         }
         int windowSize = Math.min(mMarkers.size(), mMaxWindowSize);
-        int hWindowSize = (int) windowSize / 2;
+        int hWindowSize = windowSize / 2;
         float hfWindowSize = windowSize / 2f;
         int windowStart = Math.max(0, activeIndex - hWindowSize);
         int windowEnd = Math.min(mMarkers.size(), windowStart + mMaxWindowSize);
@@ -126,7 +126,7 @@ public class PageIndicator extends LinearLayout {
 
         // Add all the new children that belong in the window
         for (int i = 0; i < mMarkers.size(); ++i) {
-            PageIndicatorMarker marker = (PageIndicatorMarker) mMarkers.get(i);
+            PageIndicatorMarker marker = mMarkers.get(i);
             if (windowStart <= i && i < windowEnd) {
                 if (indexOfChild(marker) < 0) {
                     addView(marker, i - windowStart);

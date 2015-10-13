@@ -21,7 +21,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
-import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
@@ -107,7 +106,7 @@ public class DeleteDropTargetBar extends FrameLayout implements DragController.D
         if (mEnableDropDownDropTargets) {
             LauncherAppState app = LauncherAppState.getInstance();
             DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
-            mBarHeight = grid.searchBarSpaceHeightPx;
+            mBarHeight = grid.deleteBarSpaceHeightPx;
             mDropTargetBar.setTranslationY(-mBarHeight);
             mDropTargetBarAnim = LauncherAnimUtils.ofFloat(mDropTargetBar, "translationY",
                     -mBarHeight, 0f);

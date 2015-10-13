@@ -54,11 +54,11 @@ import android.view.animation.LinearInterpolator;
 import java.util.ArrayList;
 
 interface Page {
-    public int getPageChildCount();
-    public View getChildOnPageAt(int i);
-    public void removeAllViewsOnPage();
-    public void removeViewOnPageAt(int i);
-    public int indexOfChildOnPage(View v);
+    int getPageChildCount();
+    View getChildOnPageAt(int i);
+    void removeAllViewsOnPage();
+    void removeViewOnPageAt(int i);
+    int indexOfChildOnPage(View v);
 }
 
 /**
@@ -360,6 +360,7 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
     }
 
     protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
         // Unhook the page indicator
         mPageIndicator = null;
     }
@@ -1642,7 +1643,7 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
             f /= Math.abs(f);
         }
 
-        int overScrollAmount = (int) Math.round(OVERSCROLL_DAMP_FACTOR * f * screenSize);
+        int overScrollAmount = Math.round(OVERSCROLL_DAMP_FACTOR * f * screenSize);
         if (amount < 0) {
             mOverScrollX = overScrollAmount;
             super.scrollTo(mOverScrollX, getScrollY());
@@ -1713,7 +1714,7 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
             int minIndex = indexOfChild(mDragView);
             for (int i = mTempVisiblePagesRange[0]; i <= mTempVisiblePagesRange[1]; i++) {
                 View page = getPageAt(i);
-                int pageX = (int) (page.getLeft() + page.getMeasuredWidth() / 2);
+                int pageX = page.getLeft() + page.getMeasuredWidth() / 2;
                 int d = Math.abs(dragX - pageX);
                 if (d < minDistance) {
                     minIndex = i;
@@ -2146,7 +2147,7 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
         int screenCenter = getViewportOffsetX() + getScrollX() + (getViewportWidth() / 2);
         final int childCount = getChildCount();
         for (int i = 0; i < childCount; ++i) {
-            View layout = (View) getPageAt(i);
+            View layout = getPageAt(i);
             int childWidth = layout.getMeasuredWidth();
             int halfChildWidth = (childWidth / 2);
             int childCenter = getViewportOffsetX() + getChildOffset(i) + halfChildWidth;
@@ -2579,7 +2580,7 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
                 public void run() {
                     onCompleteRunnable.run();
                     enableFreeScroll();
-                };
+                }
             };
 
             mPostReorderingPreZoomInRemainingAnimationCount =
@@ -2653,7 +2654,7 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
             mVelocity.y *= mFriction;
             mPrevTime = curTime;
         }
-    };
+    }
 
     private static final int ANIM_TAG_KEY = 100;
 

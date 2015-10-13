@@ -245,7 +245,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
 
         Context context = getContext();
         Resources r = context.getResources();
-        setDragSlopeThreshold(r.getInteger(R.integer.config_appsCustomizeDragSlopeThreshold)/100f);
+        setDragSlopeThreshold(r.getInteger(R.integer.config_appsCustomizeDragSlopeThreshold) / 100f);
     }
 
     public void onFinishInflate() {
@@ -341,8 +341,8 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         // use for each page
         LauncherAppState app = LauncherAppState.getInstance();
         DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
-        mCellCountX = (int) grid.allAppsNumCols;
-        mCellCountY = (int) grid.allAppsNumRows;
+        mCellCountX = grid.allAppsNumCols;
+        mCellCountY = grid.allAppsNumRows;
         updatePageCounts();
 
         // Force a measure to update recalculate the gaps
@@ -357,21 +357,25 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         invalidatePageData(Math.max(0, page), hostIsTransitioning);
     }
 
+    private Runnable onDataReadyNotifier = new Runnable() {
+        @Override
+        public void run() {
+            // This code triggers requestLayout so must be posted outside of the
+            // layout pass.
+
+            if (Utilities.isViewAttachedToWindow(AppsCustomizePagedView.this)) {
+                setDataIsReady();
+                onDataReady(getMeasuredWidth(), getMeasuredHeight());
+            }
+        }
+    };
+
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
 
         if (!isDataReady()) {
             if (!mApps.isEmpty() && !mWidgets.isEmpty()) {
-                post(new Runnable() {
-                    // This code triggers requestLayout so must be posted outside of the
-                    // layout pass.
-                    public void run() {
-                        if (Utilities.isViewAttachedToWindow(AppsCustomizePagedView.this)) {
-                            setDataIsReady();
-                            onDataReady(getMeasuredWidth(), getMeasuredHeight());
-                        }
-                    }
-                });
+                post(onDataReadyNotifier);
             }
         }
     }
@@ -892,12 +896,10 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         super.snapToPage(whichPage, delta, duration);
 
         // Update the thread priorities given the direction lookahead
-        Iterator<AppsCustomizeAsyncTask> iter = mRunningTasks.iterator();
-        while (iter.hasNext()) {
-            AppsCustomizeAsyncTask task = iter.next();
+        for (AppsCustomizeAsyncTask task : mRunningTasks) {
             int pageIndex = task.page;
             if ((mNextPage > mCurrentPage && pageIndex >= mCurrentPage) ||
-                (mNextPage < mCurrentPage && pageIndex <= mCurrentPage)) {
+                    (mNextPage < mCurrentPage && pageIndex <= mCurrentPage)) {
                 task.setThreadPriority(getThreadPriorityForPage(pageIndex));
             } else {
                 task.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
@@ -1261,7 +1263,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
             // Update all thread priorities
             Iterator<AppsCustomizeAsyncTask> iter = mRunningTasks.iterator();
             while (iter.hasNext()) {
-                AppsCustomizeAsyncTask task = (AppsCustomizeAsyncTask) iter.next();
+                AppsCustomizeAsyncTask task = iter.next();
                 int pageIndex = task.page;
                 task.setThreadPriority(getThreadPriorityForPage(pageIndex));
             }
@@ -1348,7 +1350,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         }
 
         for (int i = 0; i < screenCount; i++) {
-            final View layout = (View) getPageAt(i);
+            final View layout = getPageAt(i);
             if (!(leftScreen <= i && i <= rightScreen &&
                     (i == forceDrawScreen || shouldDrawChild(layout)))) {
                 layout.setLayerType(LAYER_TYPE_NONE, null);
@@ -1356,7 +1358,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         }
 
         for (int i = 0; i < screenCount; i++) {
-            final View layout = (View) getPageAt(i);
+            final View layout = getPageAt(i);
 
             if (leftScreen <= i && i <= rightScreen &&
                     (i == forceDrawScreen || shouldDrawChild(layout))) {
@@ -1535,15 +1537,13 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
     protected int getAssociatedLowerPageBound(int page) {
         final int count = getChildCount();
         int windowSize = Math.min(count, sLookBehindPageCount + sLookAheadPageCount + 1);
-        int windowMinIndex = Math.max(Math.min(page - sLookBehindPageCount, count - windowSize), 0);
-        return windowMinIndex;
+        return Math.max(Math.min(page - sLookBehindPageCount, count - windowSize), 0);
     }
     protected int getAssociatedUpperPageBound(int page) {
         final int count = getChildCount();
         int windowSize = Math.min(count, sLookBehindPageCount + sLookAheadPageCount + 1);
-        int windowMaxIndex = Math.min(Math.max(page + sLookAheadPageCount, windowSize - 1),
+        return Math.min(Math.max(page + sLookAheadPageCount, windowSize - 1),
                 count - 1);
-        return windowMaxIndex;
     }
 
     protected String getCurrentPageDescription() {

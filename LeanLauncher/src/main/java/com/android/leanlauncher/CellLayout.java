@@ -121,12 +121,6 @@ public class CellLayout extends ViewGroup {
 
     private boolean mItemPlacementDirty = false;
 
-    public void setIsWorkspace(boolean mIsWorkspace) {
-        this.mIsWorkspace = mIsWorkspace;
-    }
-
-    private boolean mIsWorkspace = false;
-
     // When a drag operation is in progress, holds the nearest cell to the touch point
     private final int[] mDragCell = new int[2];
 
@@ -317,14 +311,6 @@ public class CellLayout extends ViewGroup {
         mShortcutsAndWidgets.setInvertIfRtl(invert);
     }
 
-    public void setDropPending(boolean pending) {
-        mDropPending = pending;
-    }
-
-    public boolean isDropPending() {
-        return mDropPending;
-    }
-
     void setOverScrollAmount(float r, boolean left) {
         if (left && mOverScrollForegroundDrawable != mOverScrollLeft) {
             mOverScrollForegroundDrawable = mOverScrollLeft;
@@ -333,7 +319,7 @@ public class CellLayout extends ViewGroup {
         }
 
         r *= 0.65f;
-        mForegroundAlpha = (int) Math.round((r * 255));
+        mForegroundAlpha = Math.round((r * 255));
         mOverScrollForegroundDrawable.setAlpha(mForegroundAlpha);
         invalidate();
     }
@@ -555,11 +541,8 @@ public class CellLayout extends ViewGroup {
         // First we clear the tag to ensure that on every touch down we start with a fresh slate,
         // even in the case where we return early. Not clearing here was causing bugs whereby on
         // long-press we'd end up picking up an item from a previous drag operation.
-        if (mInterceptTouchListener != null && mInterceptTouchListener.onTouch(this, ev)) {
-            return true;
-        }
+        return mInterceptTouchListener != null && mInterceptTouchListener.onTouch(this, ev);
 
-        return false;
     }
 
     /**
@@ -801,11 +784,6 @@ public class CellLayout extends ViewGroup {
     @Override
     protected void setChildrenDrawingCacheEnabled(boolean enabled) {
         mShortcutsAndWidgets.setChildrenDrawingCacheEnabled(enabled);
-    }
-
-    @Override
-    protected void setChildrenDrawnWithCacheEnabled(boolean enabled) {
-        mShortcutsAndWidgets.setChildrenDrawnWithCacheEnabled(enabled);
     }
 
     public float getBackgroundAlpha() {
@@ -1880,7 +1858,7 @@ public class CellLayout extends ViewGroup {
      * the provided point and the provided cell
      */
     private void computeDirectionVector(float deltaX, float deltaY, int[] result) {
-        double angle = Math.atan(((float) deltaY) / deltaX);
+        double angle = Math.atan(deltaY / deltaX);
 
         result[0] = 0;
         result[1] = 0;
@@ -3049,8 +3027,8 @@ out:            for (int i = x; i < x + spanX - 1 && x < xCount; i++) {
                         leftMargin - rightMargin;
                 height = myCellVSpan * cellHeight + ((myCellVSpan - 1) * heightGap) -
                         topMargin - bottomMargin;
-                x = (int) (myCellX * (cellWidth + widthGap) + leftMargin);
-                y = (int) (myCellY * (cellHeight + heightGap) + topMargin);
+                x = myCellX * (cellWidth + widthGap) + leftMargin;
+                y = myCellY * (cellHeight + heightGap) + topMargin;
             }
         }
 

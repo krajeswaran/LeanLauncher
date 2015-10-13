@@ -16,22 +16,13 @@
 
 package com.android.leanlauncher;
 
-import android.app.WallpaperManager;
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
 
 public class ShortcutAndWidgetContainer extends ViewGroup {
     static final String TAG = "CellLayoutChildren";
-
-    // These are temporary variables to prevent having to allocate a new object just to
-    // return an (x, y) value from helper functions. Do NOT use them to maintain other state.
-    private final int[] mTmpCellXY = new int[2];
-
-    private final WallpaperManager mWallpaperManager;
 
     private int mCellWidth;
     private int mCellHeight;
@@ -40,13 +31,11 @@ public class ShortcutAndWidgetContainer extends ViewGroup {
     private int mHeightGap;
 
     private int mCountX;
-    private int mCountY;
 
     private boolean mInvertIfRtl = false;
 
     public ShortcutAndWidgetContainer(Context context) {
         super(context);
-        mWallpaperManager = WallpaperManager.getInstance(context);
     }
 
     public void setCellDimensions(int cellWidth, int cellHeight, int widthGap, int heightGap,
@@ -56,7 +45,6 @@ public class ShortcutAndWidgetContainer extends ViewGroup {
         mWidthGap = widthGap;
         mHeightGap = heightGap;
         mCountX = countX;
-        mCountY = countY;
     }
 
     public View getChildAt(int x, int y) {
@@ -71,24 +59,6 @@ public class ShortcutAndWidgetContainer extends ViewGroup {
             }
         }
         return null;
-    }
-
-    @Override
-    protected void dispatchDraw(Canvas canvas) {
-        @SuppressWarnings("all") // suppress dead code warning
-        final boolean debug = false;
-        if (debug) {
-            // Debug drawing for hit space
-            Paint p = new Paint();
-            p.setColor(0x6600FF00);
-            for (int i = getChildCount() - 1; i >= 0; i--) {
-                final View child = getChildAt(i);
-                final CellLayout.LayoutParams lp = (CellLayout.LayoutParams) child.getLayoutParams();
-
-                canvas.drawRect(lp.x, lp.y, lp.x + lp.width, lp.y + lp.height, p);
-            }
-        }
-        super.dispatchDraw(canvas);
     }
 
     @Override
@@ -141,9 +111,7 @@ public class ShortcutAndWidgetContainer extends ViewGroup {
             lp.setup(cellWidth, cellHeight, mWidthGap, mHeightGap, invertLayoutHorizontally(),
                     mCountX);
 
-            if (child instanceof LauncherAppWidgetHostView) {
-                // Widgets have their own padding, so skip
-            } else {
+            if (! (child instanceof LauncherAppWidgetHostView)) {
                 // Otherwise, center the icon
                 int cHeight = getCellContentHeight();
                 int cellPaddingY = (int) Math.max(0, ((lp.height - cHeight) / 2f));
@@ -183,13 +151,6 @@ public class ShortcutAndWidgetContainer extends ViewGroup {
 
                 if (lp.dropped) {
                     lp.dropped = false;
-
-                    final int[] cellXY = mTmpCellXY;
-                    getLocationOnScreen(cellXY);
-                    mWallpaperManager.sendWallpaperCommand(getWindowToken(),
-                            WallpaperManager.COMMAND_DROP,
-                            cellXY[0] + childLeft + lp.width / 2,
-                            cellXY[1] + childTop + lp.height / 2, 0, null);
                 }
             }
         }
@@ -233,10 +194,5 @@ public class ShortcutAndWidgetContainer extends ViewGroup {
                 view.buildDrawingCache(true);
             }
         }
-    }
-
-    @Override
-    protected void setChildrenDrawnWithCacheEnabled(boolean enabled) {
-        super.setChildrenDrawnWithCacheEnabled(enabled);
     }
 }

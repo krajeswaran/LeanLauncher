@@ -252,8 +252,8 @@ public class LauncherProvider extends ContentProvider {
         }
     }
 
-    private static interface ContentValuesCallback {
-        public void onRow(ContentValues values);
+    private interface ContentValuesCallback {
+        void onRow(ContentValues values);
     }
 
     public void deleteDatabase() {

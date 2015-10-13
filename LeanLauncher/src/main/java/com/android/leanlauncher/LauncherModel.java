@@ -98,6 +98,7 @@ public class LauncherModel extends BroadcastReceiver
     public static final int LOADER_FLAG_CLEAR_WORKSPACE = 1;
 
     private static final int ITEMS_CHUNK = 6; // batch size for the workspace icons
+    private static final String SYSTEM_READY = "com.android.launcher.SYSTEM_READY";
 
     private final boolean mAppsCanBeOnRemoveableStorage;
 
@@ -174,31 +175,31 @@ public class LauncherModel extends BroadcastReceiver
     private final UserManagerCompat mUserManager;
 
     public interface Callbacks {
-        public boolean setLoadOnResume();
-        public void startBinding();
-        public void bindItems(ArrayList<ItemInfo> shortcuts, int start, int end,
-                              boolean forceAnimateIcons);
-        public void bindDefaultScreen();
-        public void finishBindingItems();
-        public void bindAppWidget(LauncherAppWidgetInfo info);
-        public void bindAllApplications(ArrayList<AppInfo> apps);
-        public void bindAppsAdded(long newScreen,
-                                  ArrayList<ItemInfo> addNotAnimated,
-                                  ArrayList<ItemInfo> addAnimated,
-                                  ArrayList<AppInfo> addedApps);
-        public void bindAppsUpdated(ArrayList<AppInfo> apps);
-        public void bindShortcutsChanged(ArrayList<ShortcutInfo> updated,
-                ArrayList<ShortcutInfo> removed, UserHandleCompat user);
-        public void bindWidgetsRestored(ArrayList<LauncherAppWidgetInfo> widgets);
-        public void updatePackageState(ArrayList<PackageInstallInfo> installInfo);
-        public void updatePackageBadge(String packageName);
-        public void bindComponentsRemoved(ArrayList<String> packageNames,
-                        ArrayList<AppInfo> appInfos, UserHandleCompat user, int reason);
-        public void bindPackagesUpdated(ArrayList<Object> widgetsAndShortcuts);
+        boolean setLoadOnResume();
+        void startBinding();
+        void bindItems(ArrayList<ItemInfo> shortcuts, int start, int end,
+                       boolean forceAnimateIcons);
+        void bindDefaultScreen();
+        void finishBindingItems();
+        void bindAppWidget(LauncherAppWidgetInfo info);
+        void bindAllApplications(ArrayList<AppInfo> apps);
+        void bindAppsAdded(long newScreen,
+                           ArrayList<ItemInfo> addNotAnimated,
+                           ArrayList<ItemInfo> addAnimated,
+                           ArrayList<AppInfo> addedApps);
+        void bindAppsUpdated(ArrayList<AppInfo> apps);
+        void bindShortcutsChanged(ArrayList<ShortcutInfo> updated,
+                                  ArrayList<ShortcutInfo> removed, UserHandleCompat user);
+        void bindWidgetsRestored(ArrayList<LauncherAppWidgetInfo> widgets);
+        void updatePackageState(ArrayList<PackageInstallInfo> installInfo);
+        void updatePackageBadge(String packageName);
+        void bindComponentsRemoved(ArrayList<String> packageNames,
+                                   ArrayList<AppInfo> appInfos, UserHandleCompat user, int reason);
+        void bindPackagesUpdated(ArrayList<Object> widgetsAndShortcuts);
     }
 
     public interface ItemInfoFilter {
-        public boolean filterItem(ItemInfo parent, ItemInfo info, ComponentName cn);
+        boolean filterItem(ItemInfo parent, ItemInfo info, ComponentName cn);
     }
 
     LauncherModel(LauncherAppState app, IconCache iconCache, AppFilter appFilter) {
@@ -901,7 +902,7 @@ public class LauncherModel extends BroadcastReceiver
                                 sBgWorkspaceItems.remove(item);
                                 break;
                             case LauncherSettings.Favorites.ITEM_TYPE_APPWIDGET:
-                                sBgAppWidgets.remove((LauncherAppWidgetInfo) item);
+                                sBgAppWidgets.remove(item);
                                 break;
                         }
                         sBgItemsIdMap.remove(item.id);
@@ -1477,7 +1478,7 @@ public class LauncherModel extends BroadcastReceiver
             final boolean isSafeMode = manager.isSafeMode();
             final LauncherAppsCompat launcherApps = LauncherAppsCompat.getInstance(context);
             final boolean isSdCardReady = context.registerReceiver(null,
-                    new IntentFilter(StartupReceiver.SYSTEM_READY)) != null;
+                    new IntentFilter(SYSTEM_READY)) != null;
 
             LauncherAppState app = LauncherAppState.getInstance();
             DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
@@ -1910,7 +1911,7 @@ public class LauncherModel extends BroadcastReceiver
 
                 if (!isSdCardReady && !sPendingPackages.isEmpty()) {
                     context.registerReceiver(new AppsAvailabilityCheck(),
-                            new IntentFilter(StartupReceiver.SYSTEM_READY),
+                            new IntentFilter(SYSTEM_READY),
                             null, sWorker);
                 }
 
@@ -3015,7 +3016,8 @@ public class LauncherModel extends BroadcastReceiver
             }
             return mCollator.compare(labelA, labelB);
         }
-    };
+    }
+
     public static class WidgetAndShortcutNameComparator implements Comparator<Object> {
         private final AppWidgetManagerCompat mManager;
         private final PackageManager mPackageManager;
@@ -3048,7 +3050,7 @@ public class LauncherModel extends BroadcastReceiver
             }
             return mCollator.compare(labelA, labelB);
         }
-    };
+    }
 
     static boolean isValidProvider(AppWidgetProviderInfo provider) {
         return (provider != null) && (provider.provider != null)

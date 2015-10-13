@@ -27,7 +27,7 @@ import android.util.Log;
  */
 public interface DropTarget {
 
-    public static final String TAG = "DropTarget";
+    String TAG = "DropTarget";
 
     class DragObject {
         public int x = -1;
@@ -67,7 +67,7 @@ public interface DropTarget {
         }
     }
 
-    public static class DragEnforcer implements DragController.DragListener {
+    class DragEnforcer implements DragController.DragListener {
         int dragParity = 0;
 
         public DragEnforcer(Context context) {

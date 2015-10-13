@@ -178,7 +178,8 @@ public class Launcher extends Activity
     public static final boolean SHOW_WEIGHT_WATCHER_DEFAULT = false;
 
     /** The different states that Launcher can be in. */
-    private enum State { NONE, WORKSPACE, APPS_CUSTOMIZE, APPS_CUSTOMIZE_SPRING_LOADED };
+    private enum State { NONE, WORKSPACE, APPS_CUSTOMIZE, APPS_CUSTOMIZE_SPRING_LOADED }
+
     private State mState = State.WORKSPACE;
     private AnimatorSet mStateAnimation;
 
@@ -552,14 +553,6 @@ public class Launcher extends Activity
         final int pendingAddWidgetId = mPendingAddWidgetId;
         mPendingAddWidgetId = -1;
 
-        Runnable exitSpringLoaded = new Runnable() {
-            @Override
-            public void run() {
-                exitSpringLoadedDragModeDelayed((resultCode != RESULT_CANCELED),
-                        EXIT_SPRINGLOADED_MODE_SHORT_TIMEOUT, null);
-            }
-        };
-
         if (requestCode == REQUEST_BIND_APPWIDGET) {
             final int appWidgetId = data != null ?
                     data.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1) : -1;
@@ -611,20 +604,10 @@ public class Launcher extends Activity
                 }
             } else {
                 if (!workspaceLocked) {
-                    final CellLayout dropLayout = mWorkspace.getScreen();
-
-                    dropLayout.setDropPending(true);
-                    final Runnable onComplete = new Runnable() {
-                        @Override
-                        public void run() {
-                            completeTwoStageWidgetDrop(resultCode, appWidgetId);
-                            dropLayout.setDropPending(false);
-                        }
-                    };
+                    completeTwoStageWidgetDrop(resultCode, appWidgetId);
                 } else {
-                    PendingAddArguments args = preparePendingAddArgs(requestCode, data, appWidgetId,
+                    sPendingAddItem = preparePendingAddArgs(requestCode, data, appWidgetId,
                             mPendingAddInfo);
-                    sPendingAddItem = args;
                 }
             }
             return;
@@ -697,7 +680,7 @@ public class Launcher extends Activity
                 public void run() {
                     completeAddAppWidget(appWidgetId, mPendingAddInfo.container,
                             layout, null);
-                    exitSpringLoadedDragModeDelayed((resultCode != RESULT_CANCELED),
+                    exitSpringLoadedDragModeDelayed(true,
                             EXIT_SPRINGLOADED_MODE_SHORT_TIMEOUT, null);
                 }
             };
@@ -1681,16 +1664,8 @@ public class Launcher extends Activity
 
         } else {
             // Otherwise just add it
-            Runnable onComplete = new Runnable() {
-                @Override
-                public void run() {
-                    // Exit spring loaded mode if necessary after adding the widget
-                    exitSpringLoadedDragModeDelayed(true, EXIT_SPRINGLOADED_MODE_SHORT_TIMEOUT,
-                            null);
-                }
-            };
-            completeAddAppWidget(appWidgetId, info.container, boundWidget,
-                    appWidgetInfo);
+            exitSpringLoadedDragModeDelayed(true, EXIT_SPRINGLOADED_MODE_SHORT_TIMEOUT, null);
+            completeAddAppWidget(appWidgetId, info.container, boundWidget, appWidgetInfo);
         }
     }
 
@@ -2133,7 +2108,7 @@ public class Launcher extends Activity
         View itemUnderLongClick = null;
         if (v.getTag() instanceof ItemInfo) {
             ItemInfo info = (ItemInfo) v.getTag();
-            longClickCellInfo = new CellLayout.CellInfo(v, info);;
+            longClickCellInfo = new CellLayout.CellInfo(v, info);
             itemUnderLongClick = longClickCellInfo.cell;
             resetAddInfo();
         }
@@ -2749,7 +2724,6 @@ public class Launcher extends Activity
 
     void showWorkspace(boolean animated, Runnable onCompleteRunnable) {
         if (mState != State.WORKSPACE || mWorkspace.getState() != Workspace.State.NORMAL) {
-            boolean wasInSpringLoadedMode = (mState != State.WORKSPACE);
             mWorkspace.setVisibility(View.VISIBLE);
             hideAppsCustomizeHelper(Workspace.State.NORMAL, animated, false, onCompleteRunnable);
 
@@ -3087,7 +3061,7 @@ public class Launcher extends Activity
                 && ((item.restoreStatus & LauncherAppWidgetInfo.FLAG_PROVIDER_NOT_READY) == 0)
                 && ((item.restoreStatus & LauncherAppWidgetInfo.FLAG_ID_NOT_VALID) != 0)) {
 
-            appWidgetInfo = mModel.findAppWidgetProviderInfoWithComponent(this, item.providerName);
+            appWidgetInfo = LauncherModel.findAppWidgetProviderInfoWithComponent(this, item.providerName);
             if (appWidgetInfo == null) {
                 if (DEBUG_WIDGETS) {
                     Log.d(TAG, "Removing restored widget: id=" + item.appWidgetId
@@ -3479,11 +3453,7 @@ public class Launcher extends Activity
         PackageManager pm = getPackageManager();
         try {
             ApplicationInfo ai = pm.getApplicationInfo(getComponentName().getPackageName(), 0);
-            if ((ai.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
-                return true;
-            } else {
-                return false;
-            }
+            return (ai.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
         } catch (NameNotFoundException e) {
             e.printStackTrace();
             return false;

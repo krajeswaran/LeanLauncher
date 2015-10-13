@@ -24,20 +24,20 @@ import android.provider.BaseColumns;
  */
 class LauncherSettings {
     /** Columns required on table staht will be subject to backup and restore. */
-    static interface ChangeLogColumns extends BaseColumns {
+    interface ChangeLogColumns extends BaseColumns {
         /**
          * The time of the last update to this row.
          * <P>Type: INTEGER</P>
          */
-        static final String MODIFIED = "modified";
+        String MODIFIED = "modified";
     }
 
-    static interface BaseLauncherColumns extends ChangeLogColumns {
+    interface BaseLauncherColumns extends ChangeLogColumns {
         /**
          * Descriptive name of the gesture that can be displayed to the user.
          * <P>Type: TEXT</P>
          */
-        static final String TITLE = "title";
+        String TITLE = "title";
 
         /**
          * The Intent URL of the gesture, describing what it points to. This
@@ -45,58 +45,58 @@ class LauncherSettings {
          * an Intent that can be launched.
          * <P>Type: TEXT</P>
          */
-        static final String INTENT = "intent";
+        String INTENT = "intent";
 
         /**
          * The type of the gesture
          *
          * <P>Type: INTEGER</P>
          */
-        static final String ITEM_TYPE = "itemType";
+        String ITEM_TYPE = "itemType";
 
         /**
          * The gesture is an application
          */
-        static final int ITEM_TYPE_APPLICATION = 0;
+        int ITEM_TYPE_APPLICATION = 0;
 
         /**
          * The gesture is an application created shortcut
          */
-        static final int ITEM_TYPE_SHORTCUT = 1;
+        int ITEM_TYPE_SHORTCUT = 1;
 
         /**
          * The icon type.
          * <P>Type: INTEGER</P>
          */
-        static final String ICON_TYPE = "iconType";
+        String ICON_TYPE = "iconType";
 
         /**
          * The icon is a resource identified by a package name and an integer id.
          */
-        static final int ICON_TYPE_RESOURCE = 0;
+        int ICON_TYPE_RESOURCE = 0;
 
         /**
          * The icon is a bitmap.
          */
-        static final int ICON_TYPE_BITMAP = 1;
+        int ICON_TYPE_BITMAP = 1;
 
         /**
          * The icon package name, if icon type is ICON_TYPE_RESOURCE.
          * <P>Type: TEXT</P>
          */
-        static final String ICON_PACKAGE = "iconPackage";
+        String ICON_PACKAGE = "iconPackage";
 
         /**
          * The icon resource id, if icon type is ICON_TYPE_RESOURCE.
          * <P>Type: TEXT</P>
          */
-        static final String ICON_RESOURCE = "iconResource";
+        String ICON_RESOURCE = "iconResource";
 
         /**
          * The custom icon bitmap, if icon type is ICON_TYPE_BITMAP.
          * <P>Type: BLOB</P>
          */
-        static final String ICON = "icon";
+        String ICON = "icon";
     }
 
     /**

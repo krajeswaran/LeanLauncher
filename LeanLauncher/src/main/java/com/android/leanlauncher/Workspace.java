@@ -160,7 +160,8 @@ public class Workspace extends ViewGroup
     // State variable that indicates whether the pages are small (ie when you're
     // in all apps or customize mode)
 
-    enum State { NORMAL, NORMAL_HIDDEN, SPRING_LOADED, OVERVIEW, OVERVIEW_HIDDEN};
+    enum State { NORMAL, NORMAL_HIDDEN, SPRING_LOADED, OVERVIEW, OVERVIEW_HIDDEN}
+
     private State mState = State.NORMAL;
     private boolean mIsSwitchingState = false;
 
@@ -297,17 +298,12 @@ public class Workspace extends ViewGroup
         mIsDragOccuring = true;
         mLauncher.lockScreenOrientation();
         setChildrenBackgroundAlphaMultipliers(1f);
-        // Prevent any Un/InstallShortcutReceivers from updating the db while we are dragging
-        UninstallShortcutReceiver.enableUninstallQueue();
     }
 
 
     public void onDragEnd() {
         mIsDragOccuring = false;
         mLauncher.unlockScreenOrientation(false);
-
-        // Re-enable any Un/InstallShortcutReceiver and now process any queued items
-        UninstallShortcutReceiver.disableAndFlushUninstallQueue(getContext());
     }
 
     /**
@@ -400,7 +396,6 @@ public class Workspace extends ViewGroup
         mWorkspace.setOnClickListener(mLauncher);
         mWorkspace.setSoundEffectsEnabled(false);
 		mWorkspace.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
-        mWorkspace.setIsWorkspace(true);
         mWorkspace.setClipToPadding(true);
 
         // Add an all apps Icon
@@ -1468,7 +1463,7 @@ public class Workspace extends ViewGroup
 
     void addApplicationShortcut(ShortcutInfo info, CellLayout target, long container,
             int cellX, int cellY, boolean insertAtFirst, int intersectX, int intersectY) {
-        View view = mLauncher.createShortcut(R.layout.application, target, (ShortcutInfo) info);
+        View view = mLauncher.createShortcut(R.layout.application, target, info);
 
         final int[] cellXY = new int[2];
         target.findCellForSpanThatIntersects(cellXY, 1, 1, intersectX, intersectY);
@@ -2026,7 +2021,7 @@ public class Workspace extends ViewGroup
      */
     public boolean addExternalItemToScreen(ItemInfo dragInfo, CellLayout layout) {
         if (layout.findCellForSpan(mTempEstimate, dragInfo.spanX, dragInfo.spanY)) {
-            onDropExternal(dragInfo.dropPos, (ItemInfo) dragInfo, (CellLayout) layout, false);
+            onDropExternal(dragInfo.dropPos, dragInfo, layout, false);
             return true;
         }
         mLauncher.showOutOfSpaceMessage();
@@ -2269,7 +2264,7 @@ public class Workspace extends ViewGroup
             if (animationType == ANIMATE_INTO_POSITION_AND_REMAIN) {
                 endStyle = DragLayer.ANIMATION_END_REMAIN_VISIBLE;
             } else {
-                endStyle = DragLayer.ANIMATION_END_DISAPPEAR;;
+                endStyle = DragLayer.ANIMATION_END_DISAPPEAR;
             }
 
             Runnable onComplete = new Runnable() {
@@ -2697,7 +2692,7 @@ public class Workspace extends ViewGroup
          * @param parent containing folder, or null
          * @return true if done, false to continue the map
          */
-        public boolean evaluate(ItemInfo info, View view, View parent);
+        boolean evaluate(ItemInfo info, View view, View parent);
     }
 
     /**

@@ -150,8 +150,8 @@ public class ButtonDropTarget extends TextView implements DropTarget, DragContro
         to.set(left, top, right, bottom);
 
         // Center the destination rect about the trash icon
-        final int xOffset = (int) -(viewWidth - width) / 2;
-        final int yOffset = (int) -(viewHeight - height) / 2;
+        final int xOffset = -(viewWidth - width) / 2;
+        final int yOffset = -(viewHeight - height) / 2;
         to.offset(xOffset, yOffset);
 
         return to;

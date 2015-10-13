@@ -57,15 +57,4 @@ public class AppsCustomizeCellLayout extends CellLayout implements Page {
     public int indexOfChildOnPage(View v) {
         return indexOfChild(v);
     }
-
-    /**
-     * Clears all the key listeners for the individual icons.
-     */
-    public void resetChildrenOnKeyListeners() {
-        ShortcutAndWidgetContainer children = getShortcutsAndWidgets();
-        int childCount = children.getChildCount();
-        for (int j = 0; j < childCount; ++j) {
-            children.getChildAt(j).setOnKeyListener(null);
-        }
-    }
 }

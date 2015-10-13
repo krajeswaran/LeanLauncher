@@ -847,6 +847,6 @@ public class DragLayer extends InsettableFrameLayout {
     }
 
     public interface TouchCompleteListener {
-        public void onTouchComplete();
+        void onTouchComplete();
     }
 }

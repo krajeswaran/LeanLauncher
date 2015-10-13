@@ -72,7 +72,7 @@ public class FocusHelper {
         final PagedView container = (PagedView) parentLayout.getParent();
         final int iconIndex = itemContainer.indexOfChild(v);
         final int itemCount = itemContainer.getChildCount();
-        final int pageIndex = ((PagedView) container).indexToPage(container.indexOfChild(parentLayout));
+        final int pageIndex = container.indexToPage(container.indexOfChild(parentLayout));
         final int pageCount = container.getChildCount();
 
         final int x = iconIndex % countX;

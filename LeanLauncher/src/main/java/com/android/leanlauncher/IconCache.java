@@ -374,7 +374,7 @@ public class IconCache {
      * This method is not thread safe, it must be called from a synchronized method.
      */
     private CacheEntry getEntryForPackage(String packageName, UserHandleCompat user) {
-        ComponentName cn = new ComponentName(packageName, EMPTY_CLASS_NAME);;
+        ComponentName cn = new ComponentName(packageName, EMPTY_CLASS_NAME);
         CacheKey cacheKey = new CacheKey(cn, user);
         CacheEntry entry = mCache.get(cacheKey);
         if (entry == null) {

@@ -99,9 +99,8 @@ public final class Utilities {
     }
 
     public static boolean isRotationEnabled(Context c) {
-        boolean enableRotation = sForceEnableRotation ||
+        return sForceEnableRotation ||
                 c.getResources().getBoolean(R.bool.allow_rotation);
-        return enableRotation;
     }
 
     /**
@@ -195,17 +194,6 @@ public final class Utilities {
             final int left = (textureWidth-width) / 2;
             final int top = (textureHeight-height) / 2;
 
-            @SuppressWarnings("all") // suppress dead code warning
-            final boolean debug = false;
-            if (debug) {
-                // draw a big box for the icon for debugging
-                canvas.drawColor(sColors[sColorIndex]);
-                if (++sColorIndex >= sColors.length) sColorIndex = 0;
-                Paint debugPaint = new Paint();
-                debugPaint.setColor(0xffcccc00);
-                canvas.drawRect(left, top, left+width, top+height, debugPaint);
-            }
-
             sOldBounds.set(icon.getBounds());
             icon.setBounds(left, top, left+width, top+height);
             icon.draw(canvas);
@@ -259,8 +247,8 @@ public final class Utilities {
             scale *= v0.getScaleX();
         }
 
-        coord[0] = (int) Math.round(pt[0]);
-        coord[1] = (int) Math.round(pt[1]);
+        coord[0] = Math.round(pt[0]);
+        coord[1] = Math.round(pt[1]);
         return scale;
     }
 
@@ -299,8 +287,8 @@ public final class Utilities {
             }
         }
 
-        coord[0] = (int) Math.round(pt[0]);
-        coord[1] = (int) Math.round(pt[1]);
+        coord[0] = Math.round(pt[0]);
+        coord[1] = Math.round(pt[1]);
         return scale;
     }
 

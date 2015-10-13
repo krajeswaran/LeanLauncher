@@ -21,27 +21,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.android.leanlauncher">
 
-    <permission
-        android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT"
-        android:permissionGroup="android.permission-group.SYSTEM_TOOLS"
-        android:protectionLevel="dangerous"
-        android:label="@string/permlab_uninstall_shortcut"
-        android:description="@string/permdesc_uninstall_shortcut"/>
-    <permission
-        android:name="com.android.leanlauncher.permission.RECEIVE_LAUNCH_BROADCASTS"
-        android:protectionLevel="signature"
-        />
-    <permission
-        android:name="com.android.leanlauncher.permission.RECEIVE_FIRST_LOAD_BROADCAST"
-        android:protectionLevel="signatureOrSystem"
-        tools:ignore="SignatureOrSystemPermissions" />
-
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.BIND_APPWIDGET" tools:ignore="ProtectedPermissions"/>
-    <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="com.android.leanlauncher.permission.RECEIVE_LAUNCH_BROADCASTS" />
-    <uses-permission android:name="com.android.leanlauncher.permission.RECEIVE_FIRST_LOAD_BROADCAST" />
 
     <application
         android:name="com.android.leanlauncher.LauncherApplication"
@@ -70,15 +51,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Intent received used to uninstall shortcuts from other applications -->
-        <receiver
-            android:name="com.android.leanlauncher.UninstallShortcutReceiver"
-            android:permission="com.android.launcher.permission.UNINSTALL_SHORTCUT">
-            <intent-filter>
-                <action android:name="com.android.launcher.action.UNINSTALL_SHORTCUT" />
-            </intent-filter>
-        </receiver>
-
         <!-- Intent received used to initialize a restored widget -->
         <receiver android:name="com.android.leanlauncher.AppWidgetsRestoredReceiver" >
             <intent-filter>
@@ -91,13 +63,7 @@
                 <action android:name="android.intent.action.PACKAGE_CHANGED"/>
                 <action android:name="android.intent.action.PACKAGE_REPLACED"/>
                 <action android:name="android.intent.action.PACKAGE_REMOVED"/>
-                <data android:scheme="package"></data>
-            </intent-filter>
-        </receiver>
-
-        <receiver android:name="com.android.leanlauncher.StartupReceiver" >
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <data android:scheme="package"/>
             </intent-filter>
         </receiver>
 

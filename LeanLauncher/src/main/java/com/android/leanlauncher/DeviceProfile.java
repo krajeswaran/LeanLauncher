@@ -22,7 +22,6 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Paint;
-import android.graphics.Paint.FontMetrics;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -63,8 +62,8 @@ class DeviceProfileQuery {
 
 public class DeviceProfile {
 
-    public static interface DeviceProfileCallbacks {
-        public void onAvailableSizeChanged(DeviceProfile grid);
+    public interface DeviceProfileCallbacks {
+        void onAvailableSizeChanged(DeviceProfile grid);
     }
 
     String name;
@@ -77,7 +76,6 @@ public class DeviceProfile {
 
     boolean isLandscape;
     boolean isTablet;
-    boolean isLargeTablet;
     boolean isLayoutRtl;
     boolean transposeLayoutWithOrientation;
 
@@ -104,14 +102,13 @@ public class DeviceProfile {
     int cellWidthPx;
     int cellHeightPx;
     int allAppsIconSizePx;
-    int allAppsIconTextSizePx;
     int allAppsCellWidthPx;
     int allAppsCellHeightPx;
     int allAppsCellPaddingPx;
     int allAppsNumRows;
     int allAppsNumCols;
-    int searchBarSpaceWidthPx;
-    int searchBarSpaceHeightPx;
+    int deleteBarSpaceWidthPx;
+    int deleteBarSpaceHeightPx;
     int pageIndicatorHeightPx;
     int allAppsButtonVisualSize;
     int navBarHeightPx;
@@ -182,7 +179,7 @@ public class DeviceProfile {
         DeviceProfile closestProfile = findClosestDeviceProfile(minWidth, minHeight, points);
 
         // Snap to the closest row count
-        numRows = closestProfile.numRows + 3;
+        numRows = closestProfile.numRows;
 
         // Snap to the closest column count
         numColumns = closestProfile.numColumns;
@@ -203,8 +200,6 @@ public class DeviceProfile {
             points.add(new DeviceProfileQuery(p, p.iconTextSize));
         }
         iconTextSize = invDistWeightedInterpolate(minWidth, minHeight, points);
-        // AllApps uses the original non-scaled icon text size
-        allAppsIconTextSizePx = DynamicGrid.pxFromDp(iconTextSize, dm);
 
         // Calculate the remaining vars
         updateFromConfiguration(context, res, wPx, hPx, awPx, ahPx);
@@ -296,15 +291,12 @@ public class DeviceProfile {
         iconTextSizePx = (int) (DynamicGrid.pxFromSp(iconTextSize, dm) * scale);
         iconDrawablePaddingPx = drawablePadding;
 
-        // Search Bar
-        searchBarSpaceWidthPx = Math.min(widthPx,
-                resources.getDimensionPixelSize(R.dimen.dynamic_grid_search_bar_max_width));
-        searchBarSpaceHeightPx = resources.getDimensionPixelSize(R.dimen.dynamic_grid_search_bar_height);
+        // Delete Bar
+        deleteBarSpaceWidthPx = Math.min(widthPx,
+                resources.getDimensionPixelSize(R.dimen.dynamic_grid_delete_bar_max_width));
+        deleteBarSpaceHeightPx = resources.getDimensionPixelSize(R.dimen.dynamic_grid_delete_bar_height);
 
         // Calculate the actual text height
-        Paint textPaint = new Paint();
-        textPaint.setTextSize(iconTextSizePx);
-        FontMetrics fm = textPaint.getFontMetrics();
         cellWidthPx = iconSizePx;
         cellHeightPx = iconSizePx;
         final float scaleDps = resources.getDimensionPixelSize(R.dimen.dragViewScale);
@@ -340,7 +332,6 @@ public class DeviceProfile {
         Configuration configuration = resources.getConfiguration();
         isLandscape = (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE);
         isTablet = resources.getBoolean(R.bool.is_tablet);
-        isLargeTablet = resources.getBoolean(R.bool.is_large_tablet);
         isLayoutRtl = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1 && (configuration.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL);
         widthPx = wPx;
         heightPx = hPx;
@@ -436,7 +427,7 @@ public class DeviceProfile {
         if (orientation == CellLayout.LANDSCAPE &&
                 transposeLayoutWithOrientation) {
             padding.set(0, edgeMarginPx,
-                    0, edgeMarginPx);
+                    0, edgeMarginPx + deleteBarSpaceHeightPx);
         } else {
             if (isTablet()) {
                 // Pad the left and right of the workspace to ensure consistent spacing
@@ -461,7 +452,7 @@ public class DeviceProfile {
                 padding.set(desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.left,
                         getStatusBarTopOffset(),
                         desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.right,
-                        navBarHeightPx + searchBarSpaceHeightPx);
+                        navBarHeightPx + deleteBarSpaceHeightPx);
             }
         }
         return padding;
@@ -488,14 +479,8 @@ public class DeviceProfile {
         return height / countY;
     }
 
-    boolean isPhone() {
-        return !isTablet && !isLargeTablet;
-    }
     boolean isTablet() {
         return isTablet;
-    }
-    boolean isLargeTablet() {
-        return isLargeTablet;
     }
 
     boolean isVerticalBarLayout() {
@@ -523,23 +508,23 @@ public class DeviceProfile {
         if (hasVerticalBarLayout) {
             // Vertical search bar space
             lp.gravity = Gravity.BOTTOM | Gravity.CENTER_VERTICAL;
-            lp.width = searchBarSpaceHeightPx;
-            lp.height = LayoutParams.WRAP_CONTENT;
+            lp.width = deleteBarSpaceWidthPx;
+            lp.height = deleteBarSpaceHeightPx;
 
             LinearLayout targets = (LinearLayout) deleteDropTargetBar.findViewById(R.id.drag_target_bar);
             targets.setOrientation(LinearLayout.VERTICAL);
         } else {
             // Horizontal search bar space
             lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-            lp.width = searchBarSpaceWidthPx;
-            lp.height = searchBarSpaceHeightPx;
+            lp.width = deleteBarSpaceWidthPx;
+            lp.height = deleteBarSpaceHeightPx;
         }
         deleteDropTargetBar.setLayoutParams(lp);
 
         // Layout the workspace
         Workspace workspace = (Workspace) launcher.findViewById(R.id.workspace);
         lp = (FrameLayout.LayoutParams) workspace.getLayoutParams();
-        lp.gravity = Gravity.BOTTOM;
+        lp.gravity = Gravity.TOP;
         int orientation = isLandscape ? CellLayout.LANDSCAPE : CellLayout.PORTRAIT;
         Rect padding = getWorkspacePadding(orientation);
         workspace.setLayoutParams(lp);

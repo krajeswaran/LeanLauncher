@@ -53,8 +53,8 @@ public class LauncherScroller  {
     private TimeInterpolator mInterpolator;
     private boolean mFlywheel;
 
-    private float mVelocity;
-    private float mCurrVelocity;
+    private double mVelocity;
+    private double mCurrVelocity;
     private int mDistance;
 
     private float mFlingFriction = ViewConfiguration.getScrollFriction();
@@ -230,7 +230,7 @@ public class LauncherScroller  {
      * @return The original velocity less the deceleration. Result may be
      * negative.
      */
-    public float getCurrVelocity() {
+    public double getCurrVelocity() {
         return mMode == FLING_MODE ?
                 mCurrVelocity : mVelocity - mDeceleration * timePassed() / 2000.0f;
     }
@@ -405,17 +405,17 @@ public class LauncherScroller  {
             int minX, int maxX, int minY, int maxY) {
         // Continue a scroll or fling in progress
         if (mFlywheel && !mFinished) {
-            float oldVel = getCurrVelocity();
+            double oldVel = getCurrVelocity();
 
-            float dx = (float) (mFinalX - mStartX);
-            float dy = (float) (mFinalY - mStartY);
-            float hyp = FloatMath.sqrt(dx * dx + dy * dy);
+            double dx = (float) (mFinalX - mStartX);
+            double dy = (float) (mFinalY - mStartY);
+            double hyp = Math.sqrt(dx * dx + dy * dy);
 
-            float ndx = dx / hyp;
-            float ndy = dy / hyp;
+            double ndx = dx / hyp;
+            double ndy = dy / hyp;
 
-            float oldVelocityX = ndx * oldVel;
-            float oldVelocityY = ndy * oldVel;
+            double oldVelocityX = ndx * oldVel;
+            double oldVelocityY = ndy * oldVel;
             if (Math.signum(velocityX) == Math.signum(oldVelocityX) &&
                     Math.signum(velocityY) == Math.signum(oldVelocityY)) {
                 velocityX += oldVelocityX;
@@ -426,7 +426,7 @@ public class LauncherScroller  {
         mMode = FLING_MODE;
         mFinished = false;
 
-        float velocity = FloatMath.sqrt(velocityX * velocityX + velocityY * velocityY);
+        double velocity = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
 
         mVelocity = velocity;
         mDuration = getSplineFlingDuration(velocity);
@@ -434,8 +434,8 @@ public class LauncherScroller  {
         mStartX = startX;
         mStartY = startY;
 
-        float coeffX = velocity == 0 ? 1.0f : velocityX / velocity;
-        float coeffY = velocity == 0 ? 1.0f : velocityY / velocity;
+        double coeffX = velocity == 0 ? 1.0f : velocityX / velocity;
+        double coeffY = velocity == 0 ? 1.0f : velocityY / velocity;
 
         double totalDistance = getSplineFlingDistance(velocity);
         mDistance = (int) (totalDistance * Math.signum(velocity));
@@ -456,17 +456,17 @@ public class LauncherScroller  {
         mFinalY = Math.max(mFinalY, mMinY);
     }
 
-    private double getSplineDeceleration(float velocity) {
+    private double getSplineDeceleration(double velocity) {
         return Math.log(INFLEXION * Math.abs(velocity) / (mFlingFriction * mPhysicalCoeff));
     }
 
-    private int getSplineFlingDuration(float velocity) {
+    private int getSplineFlingDuration(double velocity) {
         final double l = getSplineDeceleration(velocity);
         final double decelMinusOne = DECELERATION_RATE - 1.0;
         return (int) (1000.0 * Math.exp(l / decelMinusOne));
     }
 
-    private double getSplineFlingDistance(float velocity) {
+    private double getSplineFlingDistance(double velocity) {
         final double l = getSplineDeceleration(velocity);
         final double decelMinusOne = DECELERATION_RATE - 1.0;
         return mFlingFriction * mPhysicalCoeff * Math.exp(DECELERATION_RATE / decelMinusOne * l);

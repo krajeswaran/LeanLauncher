@@ -468,7 +468,8 @@ public class DeleteDropTarget extends ButtonDropTarget {
             mVelocity.y *= mFriction;
             mPrevTime = curTime;
         }
-    };
+    }
+
     private AnimatorUpdateListener createFlingAlongVectorAnimatorListener(final DragLayer dragLayer,
             DragObject d, PointF vel, final long startTime, final int duration,
             ViewConfiguration config) {
