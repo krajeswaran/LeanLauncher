@@ -35,7 +35,6 @@ import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -44,14 +43,10 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Parcelable;
 import android.support.v4.util.ArrayMap;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.SparseArray;
-import android.view.Choreographer;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -59,16 +54,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityManager;
 import android.view.animation.DecelerateInterpolator;
-import android.view.animation.Interpolator;
 import android.widget.TextView;
 
 import com.android.leanlauncher.LauncherSettings.Favorites;
-import com.android.leanlauncher.compat.PackageInstallerCompat;
-import com.android.leanlauncher.compat.PackageInstallerCompat.PackageInstallInfo;
 import com.android.leanlauncher.compat.UserHandleCompat;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -147,7 +138,6 @@ public class Workspace extends ViewGroup
     // These are temporary variables to prevent having to allocate a new object just to
     // return an (x, y) value from helper functions. Do NOT use them to maintain other state.
     private int[] mTempCell = new int[2];
-    private int[] mTempEstimate = new int[2];
     private float[] mDragViewVisualCenter = new float[2];
     private float[] mTempCellLayoutCenterCoordinates = new float[2];
     private Matrix mTempInverseMatrix = new Matrix();
@@ -196,19 +186,13 @@ public class Workspace extends ViewGroup
     private int mLastReorderX = -1;
     private int mLastReorderY = -1;
 
-    private SparseArray<Parcelable> mSavedStates;
-
     private float mCurrentScale;
     private float mNewScale;
     private float mOldBackgroundAlpha;
-    private float mOldAlpha;
     private float mNewBackgroundAlpha;
-    private float mNewAlpha;
     private float mTransitionProgress;
     private Animator mStateAnimator = null;
     private int mTouchState = PagedView.TOUCH_STATE_REST;
-
-    float mOverScrollEffect = 0f;
 
     private Runnable mDeferredAction;
     private boolean mDeferDropAfterUninstall;
@@ -459,7 +443,7 @@ public class Workspace extends ViewGroup
 
         // Get the canonical child id to uniquely represent this view in this screen
         ItemInfo info = (ItemInfo) child.getTag();
-        int childId = mLauncher.getViewIdForItem(info);
+        int childId = LauncherAppState.getInstance().getViewIdForItem(info);
 
         if (!layout.addViewToCellLayout(child, insert ? 0 : -1, childId, lp, true)) {
             // TODO: This branch occurs when the workspace is adding views
@@ -520,11 +504,8 @@ public class Workspace extends ViewGroup
 
     @Override
     public boolean dispatchUnhandledMove(View focused, int direction) {
-        if (workspaceInModalState() || !isFinishedSwitchingState()) {
-            // when the home screens are shrunken, shouldn't allow side-scrolling
-            return false;
-        }
-        return super.dispatchUnhandledMove(focused, direction);
+        // when the home screens are shrunken, shouldn't allow side-scrolling
+        return !(workspaceInModalState() || !isFinishedSwitchingState()) && super.dispatchUnhandledMove(focused, direction);
     }
 
     @Override
@@ -632,7 +613,7 @@ public class Workspace extends ViewGroup
                 mBackgroundFadeOutAnimation.addUpdateListener(new AnimatorUpdateListener() {
                     public void onAnimationUpdate(ValueAnimator animation) {
                         dragLayer.setBackgroundAlpha(
-                                ((Float)animation.getAnimatedValue()).floatValue());
+                                (Float) animation.getAnimatedValue());
                     }
                 });
                 mBackgroundFadeOutAnimation.setInterpolator(new DecelerateInterpolator(1.5f));
@@ -720,13 +701,20 @@ public class Workspace extends ViewGroup
         return mState != State.NORMAL;
     }
 
+    private void updateChildrenLayersEnabled(boolean force) {
+        boolean small = mState == State.OVERVIEW || mIsSwitchingState;
+        boolean enableChildrenLayers = force || small || mAnimatingViewIntoPlace;
+
+        mWorkspace.enableHardwareLayer(enableChildrenLayers);
+    }
+
     public void buildPageHardwareLayers() {
         // force layers to be enabled just for the call to buildLayer
-        mWorkspace.enableHardwareLayer(true);
+        updateChildrenLayersEnabled(true);
         if (getWindowToken() != null) {
             mWorkspace.buildHardwareLayer();
         }
-        mWorkspace.enableHardwareLayer(false);
+        updateChildrenLayersEnabled(false);
     }
 
     protected void onWallpaperTap(MotionEvent ev) {
@@ -823,34 +811,6 @@ public class Workspace extends ViewGroup
             bounds.inset(inset, inset);
         }
         return bounds;
-    }
-
-    public void onExternalDragStartedWithItem(View v) {
-        // Compose a drag bitmap with the view scaled to the icon size
-        LauncherAppState app = LauncherAppState.getInstance();
-        DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
-        int iconSize = grid.iconSizePx;
-        int bmpWidth = v.getMeasuredWidth();
-        int bmpHeight = v.getMeasuredHeight();
-
-        // If this is a text view, use its drawable instead
-        if (v instanceof TextView) {
-            TextView tv = (TextView) v;
-            Drawable d = tv.getCompoundDrawables()[1];
-            Rect bounds = getDrawableBounds(d);
-            bmpWidth = bounds.width();
-            bmpHeight = bounds.height();
-        }
-
-        // Compose the bitmap to create the icon from
-        Bitmap b = Bitmap.createBitmap(bmpWidth, bmpHeight,
-                Bitmap.Config.ARGB_8888);
-        mCanvas.setBitmap(b);
-        drawDragView(v, mCanvas, 0);
-        mCanvas.setBitmap(null);
-
-        // The outline is used to visualize where the item will land if dropped
-        mDragOutline = createDragOutline(b, DRAG_BITMAP_PADDING, iconSize, iconSize, true);
     }
 
     public void onDragStartedWithItem(PendingAddItemInfo info, Bitmap b, boolean clipAlpha) {
@@ -1067,8 +1027,8 @@ public class Workspace extends ViewGroup
             }
         }
 
-        mOldAlpha = initialAlpha;
-        mNewAlpha = finalAlpha;
+        float oldAlpha = initialAlpha;
+        float newAlpha = finalAlpha;
         if (animated) {
             mOldBackgroundAlpha = cl.getBackgroundAlpha();
             mNewBackgroundAlpha = finalBackgroundAlpha;
@@ -1087,17 +1047,17 @@ public class Workspace extends ViewGroup
                     .setInterpolator(mZoomInInterpolator);
             anim.play(scale);
             float currentAlpha = cl.getShortcutsAndWidgets().getAlpha();
-            if (mOldAlpha == 0 && mNewAlpha == 0) {
+            if (oldAlpha == 0 && newAlpha == 0) {
                 cl.setBackgroundAlpha(mNewBackgroundAlpha);
-                cl.setShortcutAndWidgetAlpha(mNewAlpha);
+                cl.setShortcutAndWidgetAlpha(newAlpha);
             } else {
                 if (layerViews != null) {
                     layerViews.add(cl);
                 }
-                if (mOldAlpha != mNewAlpha || currentAlpha != mNewAlpha) {
+                if (oldAlpha != newAlpha || currentAlpha != newAlpha) {
                     LauncherViewPropertyAnimator alphaAnim =
                             new LauncherViewPropertyAnimator(cl.getShortcutsAndWidgets());
-                    alphaAnim.alpha(mNewAlpha)
+                    alphaAnim.alpha(newAlpha)
                             .setDuration(duration)
                             .setInterpolator(mZoomInInterpolator);
                     anim.play(alphaAnim);
@@ -1413,66 +1373,6 @@ public class Workspace extends ViewGroup
         b.recycle();
     }
 
-    public void beginExternalDragShared(View child, DragSource source) {
-        LauncherAppState app = LauncherAppState.getInstance();
-        DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
-        int iconSize = grid.iconSizePx;
-
-        // Notify launcher of drag start
-        mLauncher.onDragStarted(child);
-
-        // Compose a new drag bitmap that is of the icon size
-        AtomicInteger padding = new AtomicInteger(DRAG_BITMAP_PADDING);
-        final Bitmap tmpB = createDragBitmap(child, padding);
-        Bitmap b = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888);
-        Paint p = new Paint();
-        p.setFilterBitmap(true);
-        mCanvas.setBitmap(b);
-        mCanvas.drawBitmap(tmpB, new Rect(0, 0, tmpB.getWidth(), tmpB.getHeight()),
-                new Rect(0, 0, iconSize, iconSize), p);
-        mCanvas.setBitmap(null);
-
-        // Find the child's location on the screen
-        int bmpWidth = tmpB.getWidth();
-        float iconScale = (float) bmpWidth / iconSize;
-        float scale = mLauncher.getDragLayer().getLocationInDragLayer(child, mTempXY) * iconScale;
-        int dragLayerX = Math.round(mTempXY[0] - (bmpWidth - scale * child.getWidth()) / 2);
-        int dragLayerY = Math.round(mTempXY[1]);
-
-        // Note: The drag region is used to calculate drag layer offsets, but the
-        // dragVisualizeOffset in addition to the dragRect (the size) to position the outline.
-        Point dragVisualizeOffset = new Point(-padding.get() / 2, padding.get() / 2);
-        Rect dragRect = new Rect(0, 0, iconSize, iconSize);
-
-        if (child.getTag() == null || !(child.getTag() instanceof ItemInfo)) {
-            String msg = "Drag started with a view that has no tag set. This "
-                    + "will cause a crash (issue 11627249) down the line. "
-                    + "View: " + child + "  tag: " + child.getTag();
-            throw new IllegalStateException(msg);
-        }
-
-        // Start the drag
-        DragView dv = mDragController.startDrag(b, dragLayerX, dragLayerY, source, child.getTag(),
-                DragController.DRAG_ACTION_MOVE, dragVisualizeOffset, dragRect, scale);
-        dv.setIntrinsicIconScaleFactor(source.getIntrinsicIconScaleFactor());
-
-        // Recycle temporary bitmaps
-        b.recycle();
-        tmpB.recycle();
-    }
-
-    void addApplicationShortcut(ShortcutInfo info, CellLayout target, long container,
-            int cellX, int cellY, boolean insertAtFirst, int intersectX, int intersectY) {
-        View view = mLauncher.createShortcut(R.layout.application, target, info);
-
-        final int[] cellXY = new int[2];
-        target.findCellForSpanThatIntersects(cellXY, 1, 1, intersectX, intersectY);
-        addInScreen(view, container, cellXY[0], cellXY[1], 1, 1, insertAtFirst);
-
-        LauncherModel.addOrMoveItemInDatabase(mLauncher, info, container, cellXY[0],
-                cellXY[1]);
-    }
-
     public boolean transitionStateShouldAllowDrop() {
         return ((!isSwitchingState() || mTransitionProgress > 0.5f) &&
                 (mState == State.NORMAL || mState == State.SPRING_LOADED));
@@ -1560,8 +1460,8 @@ public class Workspace extends ViewGroup
             Runnable resizeRunnable = null;
             if (dropTargetLayout != null && !d.cancelled) {
                 long container = LauncherSettings.Favorites.CONTAINER_DESKTOP;
-                int spanX = mDragInfo != null ? mDragInfo.spanX : 1;
-                int spanY = mDragInfo != null ? mDragInfo.spanY : 1;
+                int spanX = mDragInfo.spanX;
+                int spanY = mDragInfo.spanY;
                 // First we find the cell nearest to point at which the item is
                 // dropped, without any consideration to whether there is an item there.
 
@@ -1921,9 +1821,6 @@ public class Workspace extends ViewGroup
         CellLayout layout = null;
         ItemInfo item = (ItemInfo) d.dragInfo;
         if (item == null) {
-            if (LauncherAppState.isDogfoodBuild()) {
-                throw new NullPointerException("DragObject has null info");
-            }
             return;
         }
 
@@ -2013,24 +1910,6 @@ public class Workspace extends ViewGroup
         // We want the workspace to have the whole area of the display (it will find the correct
         // cell layout to drop to in the existing drag/drop logic.
         mLauncher.getDragLayer().getDescendantRectRelativeToSelf(this, outRect);
-    }
-
-    /**
-     * Add the item specified by dragInfo to the given layout.
-     * @return true if successful
-     */
-    public boolean addExternalItemToScreen(ItemInfo dragInfo, CellLayout layout) {
-        if (layout.findCellForSpan(mTempEstimate, dragInfo.spanX, dragInfo.spanY)) {
-            onDropExternal(dragInfo.dropPos, dragInfo, layout, false);
-            return true;
-        }
-        mLauncher.showOutOfSpaceMessage();
-        return false;
-    }
-
-    private void onDropExternal(int[] touchXY, Object dragInfo,
-            CellLayout cellLayout, boolean insertAtFirst) {
-        onDropExternal(touchXY, dragInfo, cellLayout, insertAtFirst, null);
     }
 
     /**
@@ -2344,8 +2223,6 @@ public class Workspace extends ViewGroup
                 CellLayout parentCell = mWorkspace;
                 if (parentCell != null) {
                     parentCell.removeView(mDragInfo.cell);
-                } else if (LauncherAppState.isDogfoodBuild()) {
-                    throw new NullPointerException("mDragInfo.cell has null parent");
                 }
                 if (mDragInfo.cell instanceof DropTarget) {
                     mDragController.removeDropTarget((DropTarget) mDragInfo.cell);
@@ -2353,10 +2230,6 @@ public class Workspace extends ViewGroup
             }
         } else if (mDragInfo != null) {
             CellLayout cellLayout = mWorkspace;
-            if (cellLayout == null && LauncherAppState.isDogfoodBuild()) {
-                throw new RuntimeException("Invalid state: cellLayout == null in "
-                        + "Workspace#onDropCompleted. Please file a bug. ");
-            }
             if (cellLayout != null) {
                 cellLayout.onDropChild(mDragInfo.cell);
             }
@@ -2399,58 +2272,6 @@ public class Workspace extends ViewGroup
         }
     }
 
-    ArrayList<ComponentName> getUniqueComponents(ArrayList<ComponentName> duplicates) {
-        ArrayList<ComponentName> uniqueIntents = new ArrayList<ComponentName>();
-        getUniqueIntents(mWorkspace, uniqueIntents, duplicates, false);
-        int count = getChildCount();
-        for (int i = 0; i < count; i++) {
-            CellLayout cl = (CellLayout) getChildAt(i);
-            getUniqueIntents(cl, uniqueIntents, duplicates, false);
-        }
-        return uniqueIntents;
-    }
-
-    void getUniqueIntents(CellLayout cl, ArrayList<ComponentName> uniqueIntents,
-            ArrayList<ComponentName> duplicates, boolean stripDuplicates) {
-        int count = cl.getShortcutsAndWidgets().getChildCount();
-
-        ArrayList<View> children = new ArrayList<View>();
-        for (int i = 0; i < count; i++) {
-            View v = cl.getShortcutsAndWidgets().getChildAt(i);
-            children.add(v);
-        }
-
-        for (int i = 0; i < count; i++) {
-            View v = children.get(i);
-            ItemInfo info = (ItemInfo) v.getTag();
-            // Null check required as the AllApps button doesn't have an item info
-            if (info instanceof ShortcutInfo) {
-                ShortcutInfo si = (ShortcutInfo) info;
-                ComponentName cn = si.intent.getComponent();
-
-                Uri dataUri = si.intent.getData();
-                // If dataUri is not null / empty or if this component isn't one that would
-                // have previously showed up in the AllApps list, then this is a widget-type
-                // shortcut, so ignore it.
-                if (dataUri != null && !dataUri.equals(Uri.EMPTY)) {
-                    continue;
-                }
-
-                if (!uniqueIntents.contains(cn)) {
-                    uniqueIntents.add(cn);
-                } else {
-                    if (stripDuplicates) {
-                        cl.removeViewInLayout(v);
-                        LauncherModel.deleteItemFromDatabase(mLauncher, si);
-                    }
-                    if (duplicates != null) {
-                        duplicates.add(cn);
-                    }
-                }
-            }
-        }
-    }
-
     @Override
     public float getIntrinsicIconScaleFactor() {
         return 1f;
@@ -2485,28 +2306,6 @@ public class Workspace extends ViewGroup
         return true;
     }
 
-    @Override
-    protected void onRestoreInstanceState(Parcelable state) {
-        super.onRestoreInstanceState(state);
-    }
-
-    @Override
-    protected void dispatchRestoreInstanceState(SparseArray<Parcelable> container) {
-        // We don't dispatch restoreInstanceState to our children using this code path.
-        // Some pages will be restored immediately as their items are bound immediately, and
-        // others we will need to wait until after their items are bound.
-        mSavedStates = container;
-    }
-
-    public void restoreInstanceStateForWorkspace() {
-        if (mSavedStates != null) {
-            if (mWorkspace != null) {
-                mWorkspace.restoreInstanceState(mSavedStates);
-                mSavedStates = null;
-            }
-        }
-    }
-
     private void onResetScrollArea() {
         setCurrentDragOverlappingLayout(null);
         mInScrollArea = false;
@@ -2525,16 +2324,6 @@ public class Workspace extends ViewGroup
             childrenLayouts.add(((CellLayout) getChildAt(screen)).getShortcutsAndWidgets());
         }
         return childrenLayouts;
-    }
-
-    public View getViewForTag(final Object tag) {
-        return getFirstMatch(new ItemOperator() {
-
-            @Override
-            public boolean evaluate(ItemInfo info, View v, View parent) {
-                return info == tag;
-            }
-        });
     }
 
     public LauncherAppWidgetHostView getWidgetForAppWidgetId(final int appWidgetId) {
@@ -2591,7 +2380,7 @@ public class Workspace extends ViewGroup
                             && packageNames.contains(cn.getPackageName())) {
                         shortcutInfo.isDisabled |= reason;
                         BubbleTextView shortcut = (BubbleTextView) v;
-                        shortcut.applyFromShortcutInfo(shortcutInfo, mIconCache, true, false, true);
+                        shortcut.applyFromShortcutInfo(shortcutInfo, mIconCache, true, true);
 
                         if (parent != null) {
                             parent.invalidate();
@@ -2727,10 +2516,7 @@ public class Workspace extends ViewGroup
                         updates.contains(info)) {
                     ShortcutInfo si = (ShortcutInfo) info;
                     BubbleTextView shortcut = (BubbleTextView) v;
-                    boolean oldPromiseState = shortcut.getCompoundDrawables()[1]
-                            instanceof PreloadIconDrawable;
-                    shortcut.applyFromShortcutInfo(si, mIconCache, true,
-                            si.isPromise() != oldPromiseState, true);
+                    shortcut.applyFromShortcutInfo(si, mIconCache, true, true);
 
                     if (parent != null) {
                         parent.invalidate();
@@ -2740,81 +2526,6 @@ public class Workspace extends ViewGroup
                 return false;
             }
         });
-    }
-
-    public void removeAbandonedPromise(String packageName, UserHandleCompat user) {
-        ArrayList<String> packages = new ArrayList<String>(1);
-        packages.add(packageName);
-        LauncherModel.deletePackageFromDatabase(mLauncher, packageName, user);
-        removeItemsByPackageName(packages, user);
-    }
-
-    public void updatePackageBadge(final String packageName, final UserHandleCompat user) {
-        mapOverItems(MAP_RECURSE, new ItemOperator() {
-            @Override
-            public boolean evaluate(ItemInfo info, View v, View parent) {
-                if (info instanceof ShortcutInfo && v instanceof BubbleTextView) {
-                    ShortcutInfo shortcutInfo = (ShortcutInfo) info;
-                    ComponentName cn = shortcutInfo.getTargetComponent();
-                    if (user.equals(shortcutInfo.user) && cn != null
-                            && shortcutInfo.isPromise()
-                            && packageName.equals(cn.getPackageName())) {
-                        if (shortcutInfo.hasStatusFlag(ShortcutInfo.FLAG_AUTOINTALL_ICON)) {
-                            // For auto install apps update the icon as well as label.
-                            mIconCache.getTitleAndIcon(shortcutInfo,
-                                    shortcutInfo.promisedIntent, user, true);
-                        } else {
-                            // Only update the icon for restored apps.
-                            shortcutInfo.updateIcon(mIconCache);
-                        }
-                        BubbleTextView shortcut = (BubbleTextView) v;
-                        shortcut.applyFromShortcutInfo(shortcutInfo, mIconCache, true, false, true);
-
-                        if (parent != null) {
-                            parent.invalidate();
-                        }
-                    }
-                }
-                // process all the shortcuts
-                return false;
-            }
-        });
-    }
-
-    public void updatePackageState(ArrayList<PackageInstallInfo> installInfos) {
-        for (final PackageInstallInfo installInfo : installInfos) {
-            if (installInfo.state == PackageInstallerCompat.STATUS_INSTALLED) {
-                continue;
-            }
-
-            mapOverItems(MAP_RECURSE, new ItemOperator() {
-                @Override
-                public boolean evaluate(ItemInfo info, View v, View parent) {
-                    if (info instanceof ShortcutInfo && v instanceof BubbleTextView) {
-                        ShortcutInfo si = (ShortcutInfo) info;
-                        ComponentName cn = si.getTargetComponent();
-                        if (si.isPromise() && (cn != null)
-                                && installInfo.packageName.equals(cn.getPackageName())) {
-                            si.setInstallProgress(installInfo.progress);
-                            if (installInfo.state == PackageInstallerCompat.STATUS_FAILED) {
-                                // Mark this info as broken.
-                                si.status &= ~ShortcutInfo.FLAG_INSTALL_SESSION_ACTIVE;
-                            }
-                            ((BubbleTextView)v).applyState(false);
-                        }
-                    } else if (v instanceof PendingAppWidgetHostView
-                            && info instanceof LauncherAppWidgetInfo
-                            && ((LauncherAppWidgetInfo) info).providerName.getPackageName()
-                                .equals(installInfo.packageName)) {
-                        ((LauncherAppWidgetInfo) info).installProgress = installInfo.progress;
-                        ((PendingAppWidgetHostView) v).applyState();
-                    }
-
-                    // process all the shortcuts
-                    return false;
-                }
-            });
-        }
     }
 
     void widgetsRestored(ArrayList<LauncherAppWidgetInfo> changedInfo) {

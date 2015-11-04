@@ -26,8 +26,6 @@ import java.util.ArrayList;
 
 public class DynamicGrid {
     private DeviceProfile mProfile;
-    private float mMinWidth;
-    private float mMinHeight;
 
     // This is a static that we use for the default icon size on a 4/5-inch phone
     static float DEFAULT_ICON_SIZE_DP = 60;
@@ -79,11 +77,11 @@ public class DynamicGrid {
         deviceProfiles.add(new DeviceProfile("Nexus 10",
                 727, 1207,  9, 7,  76, 14.4f));
         deviceProfiles.add(new DeviceProfile("20-inch Tablet",
-                1527, 2527,  11, 8,  100, 20));
-        mMinWidth = dpiFromPx(minWidthPx, dm);
-        mMinHeight = dpiFromPx(minHeightPx, dm);
+                1527, 2527, 11, 8, 100, 20));
+        float minWidth = dpiFromPx(minWidthPx, dm);
+        float minHeight = dpiFromPx(minHeightPx, dm);
         mProfile = new DeviceProfile(context, deviceProfiles,
-                mMinWidth, mMinHeight,
+                minWidth, minHeight,
                 widthPx, heightPx,
                 awPx, ahPx,
                 resources);

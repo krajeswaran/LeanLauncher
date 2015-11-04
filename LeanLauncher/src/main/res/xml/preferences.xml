@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <SwitchPreference
+        android:key="@string/pref_rotation_enabled_key"
+        android:title="@string/pref_rotation_enabled_title"
+        android:summary="@string/pref_rotation_enabled_summary"
+        android:defaultValue="true"
+        />
+
+    <SwitchPreference
+        android:key="@string/pref_statusbar_enabled_key"
+        android:title="@string/pref_statusbar_enabled_title"
+        android:summary="@string/pref_statusbar_enabled_summary"
+        android:defaultValue="false"
+        />
+
+    <ListPreference
+        android:key="@string/pref_icon_theme_key"
+        android:title="@string/pref_icon_theme_title"
+        android:dialogTitle="@string/pref_icon_theme_title"
+        android:summary="@string/pref_icon_theme_summary"
+        android:entries="@array/pref_icon_theme_entries"
+        android:entryValues="@array/pref_icon_theme_values"
+        />
+
+    <Preference
+        android:key="about"
+        android:title="@string/pref_about_title"
+        android:summary="@string/pref_about_summary"
+        />
+</PreferenceScreen>

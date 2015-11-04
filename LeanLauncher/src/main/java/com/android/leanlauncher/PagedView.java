@@ -178,8 +178,6 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
 
     protected int mActivePointerId = INVALID_POINTER;
 
-    private PageSwitchListener mPageSwitchListener;
-
     protected ArrayList<Boolean> mDirtyPageContent;
 
     // If true, syncPages and syncPageItems will be called to refresh pages
@@ -263,10 +261,6 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
     private boolean mTopAlignPageWhenShrinkingForBouncer = false;
 
     protected final Rect mInsets = new Rect();
-
-    public interface PageSwitchListener {
-        void onPageSwitch(View newPage, int newPageIndex);
-    }
 
     public PagedView(Context context) {
         this(context, null);
@@ -443,17 +437,6 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
     }
 
     /**
-     * Add a page change listener which will be called when a page is _finished_ listening.
-     *
-     */
-    public void setPageSwitchListener(PageSwitchListener pageSwitchListener) {
-        mPageSwitchListener = pageSwitchListener;
-        if (mPageSwitchListener != null) {
-            mPageSwitchListener.onPageSwitch(getPageAt(mCurrentPage), mCurrentPage);
-        }
-    }
-
-    /**
      * Note: this is a reimplementation of View.isLayoutRtl() since that is currently hidden api.
      */
     public boolean isLayoutRtl() {
@@ -588,10 +571,6 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
      * has settled.
      */
     protected void notifyPageSwitchListener() {
-        if (mPageSwitchListener != null) {
-            mPageSwitchListener.onPageSwitch(getPageAt(getNextPage()), getNextPage());
-        }
-
         updatePageIndicator();
     }
 

@@ -1,12 +1,12 @@
 LeanLauncher
 ============
 
-Minimal, dumb launcher forked from AOSP's [Launcher 3](https://android.googlesource.com/platform/packages/apps/Launcher3/). It basically removes 'fluffy' features and clutter from Launcher 3, adds a few enhancements/
-The idea is to make a launcher similar in experience to older versions of [Smart Launcher](https://play.google.com/store/apps/details?id=ginlemon.flowerfree).
+Minimal, dumb launcher forked from AOSP's [Launcher 3](https://android.googlesource.com/platform/packages/apps/Launcher3/). Removes 'fluffy' features and clutter from Launcher 3, adds a few useful features.
+Inspired by single workspace launchers like [Smart Launcher](https://play.google.com/store/apps/details?id=ginlemon.flowerfree).
 
 Why
 ---
-Because I got bored on a weekend and frustrated with launchers adding more crap I have no use far. Besides, everyone writes a launcher at somepoint :)
+Because I got bored on a weekend(okay, several weekends) and frustrated with launchers adding more crap I have no use far. Besides, everyone tries to write a launcher at somepoint :)
 
 Screenshots
 -----------
@@ -37,22 +37,40 @@ Credits
 Forked from Launcher3 at https://android.googlesource.com/platform/packages/apps/Launcher3
 Launcher icon from Material icons project
 
-License
-=======
-
-See LICENSE
-
 Todo
 ====
 
 - [x] fix: bottom space for remove 
 - [x] fix: widget overview mode not exiting
-- [ ] Add support for icon theme
-- [ ] swipe to all apps, recent tasks
+- [x] Add support for icon theme
+- [ ] pref: about 
 - [ ] run del script
-- [ ] final proguard cfg
+- [ ] run/fix in M
+- [ ] final proguard cfg + license stuff
 - [ ] commit, publish
-- [ ] Use a less complicated backend
-- [ ] Add Preferences: import/export settings, all apps button behaviour, icon theme, layout cells?
-- [ ] better landscape support
-- [ ] Simple search bar for contacts/app
+- [ ] All apps: categories/sort order support
+- [ ] Simple search widget for apps
+- [ ] Better landscape support
+- [ ] Hide app, choose icon
+- [ ] double-click icon support
+- [ ] Use a less complicated model/db
+- [ ] Simple gesture support: swipe to all apps, recent tasks
+- [ ] Add more Preferences: icon customisation(rings, mono-color, normalize), layout cells?, all apps button hide
+
+License
+=======
+
+    Copyright 2015 Kumaresan Rajeswaran
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+

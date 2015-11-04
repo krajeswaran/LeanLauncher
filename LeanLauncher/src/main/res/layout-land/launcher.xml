@@ -36,15 +36,15 @@
             android:layout_marginBottom="@dimen/dynamic_grid_delete_bar_height"
             />
 
+        <include layout="@layout/overview_panel"
+            android:id="@+id/overview_panel"
+            android:visibility="gone" />
+
         <include
             android:id="@+id/delete_drop_target_bar"
             layout="@layout/delete_drop_target_bar"
             android:visibility="gone"
             />
-
-        <include layout="@layout/overview_panel"
-            android:id="@+id/overview_panel"
-            android:visibility="gone" />
 
         <include layout="@layout/apps_customize_pane"
             android:id="@+id/apps_customize_pane"

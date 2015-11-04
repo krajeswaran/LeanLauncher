@@ -17,9 +17,6 @@
 package com.android.leanlauncher;
 
 import android.appwidget.AppWidgetHost;
-import android.appwidget.AppWidgetManager;
-import android.appwidget.AppWidgetProviderInfo;
-import android.content.ComponentName;
 import android.content.ContentProvider;
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
@@ -27,7 +24,6 @@ import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
 import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -45,12 +41,9 @@ import android.util.Log;
 import com.android.leanlauncher.LauncherSettings.Favorites;
 import com.android.leanlauncher.compat.UserHandleCompat;
 import com.android.leanlauncher.compat.UserManagerCompat;
-import com.android.leanlauncher.config.ProviderConfig;
 
 import java.io.File;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class LauncherProvider extends ContentProvider {
     private static final String TAG = "LauncherProvider";
@@ -58,7 +51,7 @@ public class LauncherProvider extends ContentProvider {
 
     private static final int DATABASE_VERSION = 20;
 
-    static final String AUTHORITY = ProviderConfig.AUTHORITY;
+    static final String AUTHORITY =  "com.android.leanlauncher.settings";
 
     static final String TABLE_FAVORITES = "favorites";
     static final String TABLE_WORKSPACE = "workspace";
@@ -231,7 +224,7 @@ public class LauncherProvider extends ContentProvider {
         getContext().getSharedPreferences(spKey, Context.MODE_PRIVATE)
             .edit()
             .remove(EMPTY_DATABASE_CREATED)
-            .commit();
+            .apply();
     }
 
     /**
@@ -395,85 +388,6 @@ public class LauncherProvider extends ContentProvider {
             onCreate(db);
         }
 
-        private boolean addProfileColumn(SQLiteDatabase db) {
-            db.beginTransaction();
-            try {
-                UserManagerCompat userManager = UserManagerCompat.getInstance(mContext);
-                // Default to the serial number of this user, for older
-                // shortcuts.
-                long userSerialNumber = userManager.getSerialNumberForUser(
-                        UserHandleCompat.myUserHandle());
-                // Insert new column for holding user serial number
-                db.execSQL("ALTER TABLE favorites " +
-                        "ADD COLUMN profileId INTEGER DEFAULT "
-                                        + userSerialNumber + ";");
-                db.setTransactionSuccessful();
-            } catch (SQLException ex) {
-                // Old version remains, which means we wipe old data
-                Log.e(TAG, ex.getMessage(), ex);
-                return false;
-            } finally {
-                db.endTransaction();
-            }
-            return true;
-        }
-
-
-        private void normalizeIcons(SQLiteDatabase db) {
-            Log.d(TAG, "normalizing icons");
-
-            db.beginTransaction();
-            Cursor c = null;
-            SQLiteStatement update = null;
-            try {
-                boolean logged = false;
-                update = db.compileStatement("UPDATE favorites "
-                        + "SET icon=? WHERE _id=?");
-
-                c = db.rawQuery("SELECT _id, icon FROM favorites WHERE iconType=" +
-                        Favorites.ICON_TYPE_BITMAP, null);
-
-                final int idIndex = c.getColumnIndexOrThrow(Favorites._ID);
-                final int iconIndex = c.getColumnIndexOrThrow(Favorites.ICON);
-
-                while (c.moveToNext()) {
-                    long id = c.getLong(idIndex);
-                    byte[] data = c.getBlob(iconIndex);
-                    try {
-                        Bitmap bitmap = Utilities.createIconBitmap(
-                                BitmapFactory.decodeByteArray(data, 0, data.length),
-                                mContext);
-                        if (bitmap != null) {
-                            update.bindLong(1, id);
-                            data = ItemInfo.flattenBitmap(bitmap);
-                            if (data != null) {
-                                update.bindBlob(2, data);
-                                update.execute();
-                            }
-                            bitmap.recycle();
-                        }
-                    } catch (Exception e) {
-                        if (!logged) {
-                            Log.e(TAG, "Failed normalizing icon " + id, e);
-                        } else {
-                            Log.e(TAG, "Also failed normalizing icon " + id);
-                        }
-                        logged = true;
-                    }
-                }
-                db.setTransactionSuccessful();
-            } catch (SQLException ex) {
-                Log.w(TAG, "Problem while allocating appWidgetIds for existing widgets", ex);
-            } finally {
-                db.endTransaction();
-                if (update != null) {
-                    update.close();
-                }
-                if (c != null) {
-                    c.close();
-                }
-            }
-        }
 
         // Generates a new ID to use for an object in your database. This method should be only
         // called from the main UI thread. As an exception, we do call it when we call the
@@ -534,21 +448,6 @@ public class LauncherProvider extends ContentProvider {
             mMaxItemId = initializeMaxItemId(db);
             mMaxScreenId = 0;
         }
-    }
-
-    /**
-     * Build a query string that will match any row where the column matches
-     * anything in the values list.
-     */
-    private static String buildOrWhereString(String column, int[] values) {
-        StringBuilder selectWhere = new StringBuilder();
-        for (int i = values.length - 1; i >= 0; i--) {
-            selectWhere.append(column).append("=").append(values[i]);
-            if (i > 0) {
-                selectWhere.append(" OR ");
-            }
-        }
-        return selectWhere.toString();
     }
 
     static class SqlArguments {

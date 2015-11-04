@@ -17,7 +17,6 @@
 package com.android.leanlauncher;
 
 import android.annotation.TargetApi;
-import android.app.SearchManager;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -25,19 +24,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.database.ContentObserver;
 import android.graphics.Point;
 import android.os.Build;
-import android.os.Handler;
+import android.support.v4.util.ArrayMap;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 import com.android.leanlauncher.compat.LauncherAppsCompat;
-import com.android.leanlauncher.compat.PackageInstallerCompat;
-import com.android.leanlauncher.compat.PackageInstallerCompat.PackageInstallInfo;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 
 public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
     private static final String TAG = "LauncherAppState";
@@ -48,10 +43,8 @@ public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
 
     private final boolean mIsScreenLarge;
     private final float mScreenDensity;
-    private final int mLongPressTimeout = 300;
 
     private WidgetPreviewLoader.CacheDb mWidgetPreviewCacheDb;
-    private boolean mWallpaperChangedSinceLastCheck;
 
     private static WeakReference<LauncherProvider> sLauncherProvider;
     private static Context sContext;
@@ -59,15 +52,12 @@ public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
     private static LauncherAppState INSTANCE;
 
     private DynamicGrid mDynamicGrid;
+    private ArrayMap<Integer, Integer> mItemIdToViewId;
 
     public static LauncherAppState getInstance() {
         if (INSTANCE == null) {
             INSTANCE = new LauncherAppState();
         }
-        return INSTANCE;
-    }
-
-    public static LauncherAppState getInstanceNoCreate() {
         return INSTANCE;
     }
 
@@ -92,6 +82,7 @@ public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
 
         recreateWidgetPreviewDb();
         mIconCache = new IconCache(sContext);
+        mItemIdToViewId = new ArrayMap<>();
 
         mAppFilter = AppFilter.loadByName(sContext.getString(R.string.app_filter_class));
         mModel = new LauncherModel(this, mIconCache, mAppFilter);
@@ -103,17 +94,20 @@ public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
         filter.addAction(Intent.ACTION_LOCALE_CHANGED);
         filter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
         sContext.registerReceiver(mModel, filter);
-        filter = new IntentFilter();
-        filter.addAction(SearchManager.INTENT_GLOBAL_SEARCH_ACTIVITY_CHANGED);
-        sContext.registerReceiver(mModel, filter);
-        filter = new IntentFilter();
-        filter.addAction(SearchManager.INTENT_ACTION_SEARCHABLES_CHANGED);
-        sContext.registerReceiver(mModel, filter);
+    }
 
-        // Register for changes to the favorites
-        ContentResolver resolver = sContext.getContentResolver();
-        resolver.registerContentObserver(LauncherSettings.Favorites.CONTENT_URI, true,
-                mFavoritesObserver);
+    public int getViewIdForItem(ItemInfo info) {
+        // This cast is safe given the > 2B range for int.
+        int itemId = ItemInfo.NO_ID;
+        if (info != null) {
+            itemId = (int) info.id;
+        }
+        if (mItemIdToViewId.indexOfKey(itemId) > 0) {
+            return mItemIdToViewId.get(itemId);
+        }
+        int viewId = Launcher.generateViewId();
+        mItemIdToViewId.put(itemId, viewId);
+        return viewId;
     }
 
     public void recreateWidgetPreviewDb() {
@@ -130,25 +124,8 @@ public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
         sContext.unregisterReceiver(mModel);
         final LauncherAppsCompat launcherApps = LauncherAppsCompat.getInstance(sContext);
         launcherApps.removeOnAppsChangedCallback(mModel);
-        PackageInstallerCompat.getInstance(sContext).onStop();
         mDynamicGrid.getDeviceProfile().removeCallback(this);
-
-        ContentResolver resolver = sContext.getContentResolver();
-        resolver.unregisterContentObserver(mFavoritesObserver);
     }
-
-    /**
-     * Receives notifications whenever the user favorites have changed.
-     */
-    private final ContentObserver mFavoritesObserver = new ContentObserver(new Handler()) {
-        @Override
-        public void onChange(boolean selfChange) {
-            // If the database has ever changed, then we really need to force a reload of the
-            // workspace on the next load
-            mModel.resetLoadedState(false, true);
-            mModel.startLoaderFromBackground();
-        }
-    };
 
     LauncherModel setLauncher(Launcher launcher) {
         mModel.initialize(launcher);
@@ -245,41 +222,11 @@ public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
     }
 
     public int getLongPressTimeout() {
-        return mLongPressTimeout;
-    }
-
-    public void onWallpaperChanged() {
-        mWallpaperChangedSinceLastCheck = true;
-    }
-
-    public boolean hasWallpaperChangedSinceLastCheck() {
-        boolean result = mWallpaperChangedSinceLastCheck;
-        mWallpaperChangedSinceLastCheck = false;
-        return result;
+        return 300;
     }
 
     @Override
     public void onAvailableSizeChanged(DeviceProfile grid) {
         Utilities.setIconSize(grid.iconSizePx);
-    }
-
-    public static boolean isDisableAllApps() {
-        // Returns false on non-dogfood builds.
-        return false;
-    }
-
-    public static boolean isDogfoodBuild() {
-        return false;
-    }
-
-    public void setPackageState(ArrayList<PackageInstallInfo> installInfo) {
-        mModel.setPackageState(installInfo);
-    }
-
-    /**
-     * Updates the icons and label of all icons for the provided package name.
-     */
-    public void updatePackageBadge(String packageName) {
-        mModel.updatePackageBadge(packageName);
     }
 }

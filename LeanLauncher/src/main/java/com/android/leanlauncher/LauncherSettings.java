@@ -157,13 +157,6 @@ class LauncherSettings {
          */
         static final int CONTAINER_DESKTOP = -100;
 
-        static final String containerToString(int container) {
-            switch (container) {
-                case CONTAINER_DESKTOP: return "desktop";
-                default: return String.valueOf(container);
-            }
-        }
-
         /**
          * The X coordinate of the cell holding the favorite
          * <P>Type: INTEGER</P>
@@ -203,21 +196,6 @@ class LauncherSettings {
         static final int ITEM_TYPE_APPWIDGET = 4;
 
         /**
-         * The favorite is a clock
-         */
-        static final int ITEM_TYPE_WIDGET_CLOCK = 1000;
-
-        /**
-         * The favorite is a search widget
-         */
-        static final int ITEM_TYPE_WIDGET_SEARCH = 1001;
-
-        /**
-         * The favorite is a photo frame
-         */
-        static final int ITEM_TYPE_WIDGET_PHOTO_FRAME = 1002;
-
-        /**
          * The appWidgetId of the widget
          *
          * <P>Type: INTEGER</P>
@@ -231,31 +209,6 @@ class LauncherSettings {
          */
         public static final String APPWIDGET_PROVIDER = "appWidgetProvider";
         
-        /**
-         * Indicates whether this favorite is an application-created shortcut or not.
-         * If the value is 0, the favorite is not an application-created shortcut, if the
-         * value is 1, it is an application-created shortcut.
-         * <P>Type: INTEGER</P>
-         */
-        @Deprecated
-        static final String IS_SHORTCUT = "isShortcut";
-
-        /**
-         * The URI associated with the favorite. It is used, for instance, by
-         * live folders to find the content provider.
-         * <P>Type: TEXT</P>
-         */
-        static final String URI = "uri";
-
-        /**
-         * The display mode if the item is a live folder.
-         * <P>Type: INTEGER</P>
-         *
-         * @see android.provider.LiveFolders#DISPLAY_MODE_GRID
-         * @see android.provider.LiveFolders#DISPLAY_MODE_LIST
-         */
-        static final String DISPLAY_MODE = "displayMode";
-
         /**
          * Boolean indicating that his item was restored and not yet successfully bound.
          * <P>Type: INTEGER</P>

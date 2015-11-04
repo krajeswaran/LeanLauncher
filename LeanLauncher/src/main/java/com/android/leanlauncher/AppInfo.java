@@ -19,7 +19,6 @@ package com.android.leanlauncher;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.support.v4.util.ArrayMap;
 import android.util.Log;
 
@@ -29,7 +28,6 @@ import com.android.leanlauncher.compat.UserHandleCompat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 /**
  * Represents an app in AllAppsView.
@@ -39,16 +37,6 @@ public class AppInfo extends ItemInfo {
      * The intent used to start the application.
      */
     Intent intent;
-
-    /**
-     * A bitmap version of the application icon.
-     */
-    Bitmap iconBitmap;
-
-    /**
-     * The time at which the app was first installed.
-     */
-    long firstInstallTime;
 
     ComponentName componentName;
 
@@ -65,10 +53,6 @@ public class AppInfo extends ItemInfo {
         return intent;
     }
 
-    protected Intent getRestoredIntent() {
-        return null;
-    }
-
     /**
      * Must not hold the Context.
      */
@@ -78,7 +62,6 @@ public class AppInfo extends ItemInfo {
         this.container = ItemInfo.NO_ID;
 
         flags = initFlags(info);
-        firstInstallTime = info.getFirstInstallTime();
         iconCache.getTitleAndIcon(this, info, labelCache);
         intent = makeLaunchIntent(context, info, user);
         this.user = user;
@@ -103,8 +86,6 @@ public class AppInfo extends ItemInfo {
         title = info.title.toString();
         intent = new Intent(info.intent);
         flags = info.flags;
-        firstInstallTime = info.firstInstallTime;
-        iconBitmap = info.iconBitmap;
     }
 
     @Override
@@ -119,9 +100,7 @@ public class AppInfo extends ItemInfo {
     public static void dumpApplicationInfoList(String tag, String label, ArrayList<AppInfo> list) {
         Log.d(tag, label + " size=" + list.size());
         for (AppInfo info: list) {
-            Log.d(tag, "   title=\"" + info.title + "\" iconBitmap="
-                    + info.iconBitmap + " firstInstallTime="
-                    + info.firstInstallTime);
+            Log.d(tag, "   title=\"" + info.title);
         }
     }
 

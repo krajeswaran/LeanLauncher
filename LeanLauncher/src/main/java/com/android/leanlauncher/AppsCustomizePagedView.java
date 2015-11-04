@@ -957,8 +957,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         AppsCustomizeCellLayout layout = (AppsCustomizeCellLayout) getPageAt(page);
 
         layout.removeAllViewsOnPage();
-        ArrayList<Object> items = new ArrayList<Object>();
-        ArrayList<Bitmap> images = new ArrayList<Bitmap>();
         for (int i = startIndex; i < endIndex; ++i) {
             AppInfo info = mApps.get(i);
             BubbleTextView icon = (BubbleTextView) mLayoutInflater.inflate(
@@ -977,9 +975,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
                 x = mCellCountX - x - 1;
             }
             layout.addViewToCellLayout(icon, -1, i, new CellLayout.LayoutParams(x,y, 1,1), false);
-
-            items.add(info);
-            images.add(info.iconBitmap);
         }
 
         enableHwLayersOnVisiblePages();
@@ -1261,9 +1256,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
             enableHwLayersOnVisiblePages();
 
             // Update all thread priorities
-            Iterator<AppsCustomizeAsyncTask> iter = mRunningTasks.iterator();
-            while (iter.hasNext()) {
-                AppsCustomizeAsyncTask task = iter.next();
+            for (AppsCustomizeAsyncTask task : mRunningTasks) {
                 int pageIndex = task.page;
                 task.setThreadPriority(getThreadPriorityForPage(pageIndex));
             }
@@ -1416,11 +1409,9 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
     }
 
     public void setApps(ArrayList<AppInfo> list) {
-        if (!LauncherAppState.isDisableAllApps()) {
-            mApps = list;
-            Collections.sort(mApps, LauncherModel.getAppNameComparator());
-            updatePageCountsAndInvalidateData();
-        }
+        mApps = list;
+        Collections.sort(mApps, LauncherModel.getAppNameComparator());
+        updatePageCountsAndInvalidateData();
     }
     private void addAppsWithoutInvalidate(ArrayList<AppInfo> list) {
         // We add it in place, in alphabetical order
@@ -1434,10 +1425,8 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         }
     }
     public void addApps(ArrayList<AppInfo> list) {
-        if (!LauncherAppState.isDisableAllApps()) {
-            addAppsWithoutInvalidate(list);
-            updatePageCountsAndInvalidateData();
-        }
+        addAppsWithoutInvalidate(list);
+        updatePageCountsAndInvalidateData();
     }
     private int findAppByComponent(List<AppInfo> list, AppInfo item) {
         ComponentName removeComponent = item.intent.getComponent();
@@ -1463,20 +1452,16 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         }
     }
     public void removeApps(ArrayList<AppInfo> appInfos) {
-        if (!LauncherAppState.isDisableAllApps()) {
-            removeAppsWithoutInvalidate(appInfos);
-            updatePageCountsAndInvalidateData();
-        }
+        removeAppsWithoutInvalidate(appInfos);
+        updatePageCountsAndInvalidateData();
     }
     public void updateApps(ArrayList<AppInfo> list) {
         // We remove and re-add the updated applications list because it's properties may have
         // changed (ie. the title), and this will ensure that the items will be in their proper
         // place in the list.
-        if (!LauncherAppState.isDisableAllApps()) {
-            removeAppsWithoutInvalidate(list);
-            addAppsWithoutInvalidate(list);
-            updatePageCountsAndInvalidateData();
-        }
+        removeAppsWithoutInvalidate(list);
+        addAppsWithoutInvalidate(list);
+        updatePageCountsAndInvalidateData();
     }
 
     public void reset() {

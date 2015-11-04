@@ -40,7 +40,7 @@ public class LauncherAppsCompatVL extends LauncherAppsCompat {
 
     LauncherAppsCompatVL(Context context) {
         super();
-        mLauncherApps = (LauncherApps) context.getSystemService("launcherapps");
+        mLauncherApps = (LauncherApps) context.getSystemService(Context.LAUNCHER_APPS_SERVICE);
     }
 
     public List<LauncherActivityInfoCompat> getActivityList(String packageName,

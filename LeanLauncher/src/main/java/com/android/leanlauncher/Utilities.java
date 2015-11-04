@@ -18,9 +18,6 @@ package com.android.leanlauncher;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.SearchManager;
-import android.appwidget.AppWidgetManager;
-import android.appwidget.AppWidgetProviderInfo;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -42,8 +39,8 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.PaintDrawable;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.util.Log;
-import android.util.Pair;
 import android.util.SparseArray;
 import android.view.View;
 import android.widget.Toast;
@@ -66,16 +63,9 @@ public final class Utilities {
         sCanvas.setDrawFilter(new PaintFlagsDrawFilter(Paint.DITHER_FLAG,
                 Paint.FILTER_BITMAP_FLAG));
     }
-    static int sColors[] = { 0xffff0000, 0xff00ff00, 0xff0000ff };
-    static int sColorIndex = 0;
 
     static int[] sLoc0 = new int[2];
     static int[] sLoc1 = new int[2];
-
-    // To turn on these properties, type
-    // adb shell setprop log.tag.PROPERTY_NAME [VERBOSE | SUPPRESS]
-    static final String FORCE_ENABLE_ROTATION_PROPERTY = "launcher_force_rotate";
-    public static boolean sForceEnableRotation = isPropertyEnabled(FORCE_ENABLE_ROTATION_PROPERTY);
 
     /**
      * Returns a FastBitmapDrawable with the icon, accurately sized.
@@ -94,13 +84,8 @@ public final class Utilities {
         icon.setBounds(0, 0, sIconWidth, sIconHeight);
     }
 
-    public static boolean isPropertyEnabled(String propertyName) {
-        return Log.isLoggable(propertyName, Log.VERBOSE);
-    }
-
     public static boolean isRotationEnabled(Context c) {
-        return sForceEnableRotation ||
-                c.getResources().getBoolean(R.bool.allow_rotation);
+        return PreferenceManager.getDefaultSharedPreferences(c).getBoolean(c.getString(R.string.pref_rotation_enabled_key), true);
     }
 
     /**
@@ -114,7 +99,7 @@ public final class Utilities {
      * Returns a bitmap suitable for the all apps view. If the package or the resource do not
      * exist, it returns null.
      */
-    static Bitmap createIconBitmap(String packageName, String resourceName, IconCache cache,
+    static Bitmap createIconBitmap(String packageName, String resourceName, int fullResIconDpi,
             Context context) {
         PackageManager packageManager = context.getPackageManager();
         // the resource
@@ -123,7 +108,7 @@ public final class Utilities {
             if (resources != null) {
                 final int id = resources.getIdentifier(resourceName, null, null);
                 return createIconBitmap(
-                        resources.getDrawableForDensity(id, cache.getFullResIconDpi()), context);
+                        resources.getDrawableForDensity(id, fullResIconDpi), context);
             }
         } catch (Exception e) {
             // Icon not found.
@@ -253,7 +238,7 @@ public final class Utilities {
     }
 
     /**
-     * Inverse of {@link #getDescendantCoordRelativeToSelf(View, int[])}.
+     * Inverse of getDescendantCoordRelativeToParent.
      */
     public static float mapCoordInSelfToDescendent(View descendant, View root,
                                                    int[] coord) {
@@ -466,28 +451,6 @@ public final class Utilities {
         return bestColor;
     }
 
-    /*
-     * Finds a system apk which had a broadcast receiver listening to a particular action.
-     * @param action intent action used to find the apk
-     * @return a pair of apk package name and the resources.
-     */
-    static Pair<String, Resources> findSystemApk(String action, PackageManager pm) {
-        final Intent intent = new Intent(action);
-        for (ResolveInfo info : pm.queryBroadcastReceivers(intent, 0)) {
-            if (info.activityInfo != null &&
-                    (info.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
-                final String packageName = info.activityInfo.packageName;
-                try {
-                    final Resources res = pm.getResourcesForApplication(packageName);
-                    return Pair.create(packageName, res);
-                } catch (NameNotFoundException e) {
-                    Log.w(TAG, "Failed to find resources for " + packageName);
-                }
-            }
-        }
-        return null;
-    }
-
     @TargetApi(Build.VERSION_CODES.KITKAT)
     public static boolean isViewAttachedToWindow(View v) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -498,36 +461,4 @@ public final class Utilities {
         }
     }
 
-    /**
-     * Returns a widget with category {@link AppWidgetProviderInfo#WIDGET_CATEGORY_SEARCHBOX}
-     * provided by the same package which is set to be global search activity.
-     * If widgetCategory is not supported, or no such widget is found, returns the first widget
-     * provided by the package.
-     */
-    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
-    public static AppWidgetProviderInfo getSearchWidgetProvider(Context context) {
-        SearchManager searchManager =
-                (SearchManager) context.getSystemService(Context.SEARCH_SERVICE);
-        ComponentName searchComponent = searchManager.getGlobalSearchActivity();
-        if (searchComponent == null) return null;
-        String providerPkg = searchComponent.getPackageName();
-
-        AppWidgetProviderInfo defaultWidgetForSearchPackage = null;
-
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-        for (AppWidgetProviderInfo info : appWidgetManager.getInstalledProviders()) {
-            if (info.provider.getPackageName().equals(providerPkg)) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                    if ((info.widgetCategory & AppWidgetProviderInfo.WIDGET_CATEGORY_SEARCHBOX) != 0) {
-                        return info;
-                    } else if (defaultWidgetForSearchPackage == null) {
-                        defaultWidgetForSearchPackage = info;
-                    }
-                } else {
-                    return info;
-                }
-            }
-        }
-        return defaultWidgetForSearchPackage;
-    }
 }

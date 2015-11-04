@@ -87,14 +87,6 @@ public class DeleteDropTarget extends ButtonDropTarget {
         // The current drawable is set to either the remove drawable or the uninstall drawable 
         // and is initially set to the remove drawable, as set in the layout xml.
         mCurrentDrawable = (TransitionDrawable) getCurrentDrawable();
-
-        // Remove the text in the Phone UI in landscape
-        int orientation = getResources().getConfiguration().orientation;
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            if (!LauncherAppState.getInstance().isScreenLarge()) {
-                setText("");
-            }
-        }
     }
 
     private boolean isAllAppsApplication(DragSource source, Object info) {
@@ -149,21 +141,14 @@ public class DeleteDropTarget extends ButtonDropTarget {
                 return true;
             }
 
-            if (!LauncherAppState.isDisableAllApps() &&
-                    item.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPLICATION &&
-                    item instanceof AppInfo) {
+            if (item.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPLICATION && item instanceof AppInfo) {
                 AppInfo appInfo = (AppInfo) info;
                 return (appInfo.flags & AppInfo.DOWNLOADED_FLAG) != 0;
             }
 
             if (item.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPLICATION &&
                 item instanceof ShortcutInfo) {
-                if (LauncherAppState.isDisableAllApps()) {
-                    ShortcutInfo shortcutInfo = (ShortcutInfo) info;
-                    return (shortcutInfo.flags & AppInfo.DOWNLOADED_FLAG) != 0;
-                } else {
-                    return true;
-                }
+                return true;
             }
         }
         return false;
@@ -172,8 +157,7 @@ public class DeleteDropTarget extends ButtonDropTarget {
     @Override
     public void onDragStart(DragSource source, Object info, int dragAction) {
         boolean isVisible = true;
-        boolean useUninstallLabel = !LauncherAppState.isDisableAllApps() &&
-                isAllAppsApplication(source, info);
+        boolean useUninstallLabel = isAllAppsApplication(source, info);
         boolean useDeleteLabel = !useUninstallLabel && source.supportsDeleteDropTarget();
 
         // If we are dragging an application from AppsCustomize, only show the control if we can

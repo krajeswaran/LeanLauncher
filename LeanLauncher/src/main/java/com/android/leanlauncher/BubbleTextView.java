@@ -79,11 +79,11 @@ public class BubbleTextView extends TextView {
 
     public void applyFromShortcutInfoFromLauncher(ShortcutInfo info, IconCache iconCache,
                                                   boolean setDefaultPadding) {
-        applyFromShortcutInfo(info, iconCache, setDefaultPadding, false, true);
+        applyFromShortcutInfo(info, iconCache, setDefaultPadding, true);
     }
 
     public void applyFromShortcutInfo(ShortcutInfo info, IconCache iconCache,
-            boolean setDefaultPadding, boolean promiseStateChanged, boolean hideText) {
+            boolean setDefaultPadding, boolean hideText) {
         Bitmap b = info.getIcon(iconCache);
         LauncherAppState app = LauncherAppState.getInstance();
 
@@ -102,17 +102,14 @@ public class BubbleTextView extends TextView {
             setText(info.title);
         }
         setTag(info);
-
-        if (promiseStateChanged || info.isPromise()) {
-            applyState(promiseStateChanged);
-        }
     }
 
     public void applyFromApplicationInfo(AppInfo info, boolean hideTitle) {
         LauncherAppState app = LauncherAppState.getInstance();
         DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
 
-        Drawable topDrawable = Utilities.createIconDrawable(info.iconBitmap);
+        Bitmap iconBitmap = app.getIconCache().getIcon(info.intent, info.user);
+        Drawable topDrawable = Utilities.createIconDrawable(iconBitmap);
         topDrawable.setBounds(0, 0, grid.allAppsIconSizePx, grid.allAppsIconSizePx);
         setCompoundDrawables(null, topDrawable, null, null);
         setCompoundDrawablePadding(grid.iconDrawablePaddingPx);
@@ -253,33 +250,6 @@ public class BubbleTextView extends TextView {
         super.cancelLongPress();
 
         mLongPressHelper.cancelLongPress();
-    }
-
-    public void applyState(boolean promiseStateChanged) {
-        if (getTag() instanceof ShortcutInfo) {
-            ShortcutInfo info = (ShortcutInfo) getTag();
-            final boolean isPromise = info.isPromise();
-            final int progressLevel = isPromise ?
-                    ((info.hasStatusFlag(ShortcutInfo.FLAG_INSTALL_SESSION_ACTIVE) ?
-                            info.getInstallProgress() : 0)) : 100;
-
-            Drawable[] drawables = getCompoundDrawables();
-            Drawable top = drawables[1];
-            if (top != null) {
-                final PreloadIconDrawable preloadDrawable;
-                if (top instanceof PreloadIconDrawable) {
-                    preloadDrawable = (PreloadIconDrawable) top;
-                } else {
-                    preloadDrawable = new PreloadIconDrawable(top, getPreloaderTheme());
-                    setCompoundDrawables(drawables[0], preloadDrawable, drawables[2], drawables[3]);
-                }
-
-                preloadDrawable.setLevel(progressLevel);
-                if (promiseStateChanged) {
-                    preloadDrawable.maybePerformFinishedAnimation();
-                }
-            }
-        }
     }
 
     private Theme getPreloaderTheme() {

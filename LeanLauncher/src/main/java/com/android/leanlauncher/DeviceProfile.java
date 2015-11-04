@@ -77,7 +77,6 @@ public class DeviceProfile {
     boolean isLandscape;
     boolean isTablet;
     boolean isLayoutRtl;
-    boolean transposeLayoutWithOrientation;
 
     int desiredWorkspaceLeftRightMarginPx;
     int edgeMarginPx;
@@ -411,7 +410,7 @@ public class DeviceProfile {
 
     /** Returns the search bar top offset */
     int getStatusBarTopOffset() {
-        if (isTablet() && !isVerticalBarLayout()) {
+        if (isTablet() && !isLandscape) {
             return 4 * edgeMarginPx;
         } else {
             return 2 * edgeMarginPx;
@@ -422,13 +421,13 @@ public class DeviceProfile {
     Rect getWorkspacePadding() {
         return getWorkspacePadding(isLandscape ? CellLayout.LANDSCAPE : CellLayout.PORTRAIT);
     }
+
     Rect getWorkspacePadding(int orientation) {
         Rect padding = new Rect();
-        if (orientation == CellLayout.LANDSCAPE &&
-                transposeLayoutWithOrientation) {
-            padding.set(0, edgeMarginPx,
-                    0, edgeMarginPx + deleteBarSpaceHeightPx);
-        } else {
+//        if (orientation == CellLayout.LANDSCAPE) {
+//            padding.set(0, edgeMarginPx,
+//                    0, edgeMarginPx);
+//        } else {
             if (isTablet()) {
                 // Pad the left and right of the workspace to ensure consistent spacing
                 // between all icons
@@ -454,7 +453,7 @@ public class DeviceProfile {
                         desiredWorkspaceLeftRightMarginPx - defaultWidgetPadding.right,
                         navBarHeightPx + deleteBarSpaceHeightPx);
             }
-        }
+//        }
         return padding;
     }
 
@@ -483,10 +482,6 @@ public class DeviceProfile {
         return isTablet;
     }
 
-    boolean isVerticalBarLayout() {
-        return isLandscape && transposeLayoutWithOrientation;
-    }
-
     int getVisibleChildCount(ViewGroup parent) {
         int visibleChildren = 0;
         for (int i = 0; i < parent.getChildCount(); i++) {
@@ -500,14 +495,14 @@ public class DeviceProfile {
     public void layout(Launcher launcher) {
         FrameLayout.LayoutParams lp;
         Resources res = launcher.getResources();
-        boolean hasVerticalBarLayout = isVerticalBarLayout();
+        boolean hasVerticalBarLayout = isLandscape;
 
         // Layout the search bar space
         View deleteDropTargetBar = launcher.getDeleteDropBar();
         lp = (FrameLayout.LayoutParams) deleteDropTargetBar.getLayoutParams();
         if (hasVerticalBarLayout) {
             // Vertical search bar space
-            lp.gravity = Gravity.BOTTOM | Gravity.CENTER_VERTICAL;
+            lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
             lp.width = deleteBarSpaceWidthPx;
             lp.height = deleteBarSpaceHeightPx;
 
@@ -525,6 +520,7 @@ public class DeviceProfile {
         Workspace workspace = (Workspace) launcher.findViewById(R.id.workspace);
         lp = (FrameLayout.LayoutParams) workspace.getLayoutParams();
         lp.gravity = Gravity.TOP;
+        lp.height = availableHeightPx - getStatusBarTopOffset();
         int orientation = isLandscape ? CellLayout.LANDSCAPE : CellLayout.PORTRAIT;
         Rect padding = getWorkspacePadding(orientation);
         workspace.setLayoutParams(lp);

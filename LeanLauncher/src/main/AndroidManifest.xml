@@ -21,12 +21,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.android.leanlauncher">
 
-    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.BIND_APPWIDGET" tools:ignore="ProtectedPermissions"/>
 
     <application
         android:name="com.android.leanlauncher.LauncherApplication"
-        android:allowBackup="@bool/enable_backup"
+        android:allowBackup="true"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher_home"
         android:label="@string/application_name"
@@ -41,13 +40,23 @@
             android:stateNotNeeded="true"
             android:theme="@android:style/Theme.Wallpaper.NoTitleBar.Fullscreen"
             android:windowSoftInputMode="adjustPan"
-            android:screenOrientation="fullUser"
+            android:screenOrientation="nosensor"
             android:enabled="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.MONKEY"/>
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.android.leanlauncher.SettingsActivity"
+            android:label="@string/launcher_settings"
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name=".SettingsActivity" />
+                <category android:name="android.intent.category.PREFERENCE" />
             </intent-filter>
         </activity>
 
