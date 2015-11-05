@@ -297,7 +297,7 @@ public class Workspace extends ViewGroup
         LauncherAppState app = LauncherAppState.getInstance();
         mIconCache = app.getIconCache();
         setWillNotDraw(false);
-        setClipChildren(false);
+        setClipChildren(true);
         setClipToPadding(false);
         setChildrenDrawnWithCacheEnabled(true);
 

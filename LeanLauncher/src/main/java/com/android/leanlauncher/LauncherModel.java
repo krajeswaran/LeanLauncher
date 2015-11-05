@@ -1196,13 +1196,6 @@ public class LauncherModel extends BroadcastReceiver
                             (LauncherSettings.Favorites.INTENT);
                     final int titleIndex = c.getColumnIndexOrThrow
                             (LauncherSettings.Favorites.TITLE);
-                    final int iconTypeIndex = c.getColumnIndexOrThrow(
-                            LauncherSettings.Favorites.ICON_TYPE);
-                    final int iconIndex = c.getColumnIndexOrThrow(LauncherSettings.Favorites.ICON);
-                    final int iconPackageIndex = c.getColumnIndexOrThrow(
-                            LauncherSettings.Favorites.ICON_PACKAGE);
-                    final int iconResourceIndex = c.getColumnIndexOrThrow(
-                            LauncherSettings.Favorites.ICON_RESOURCE);
                     final int containerIndex = c.getColumnIndexOrThrow(
                             LauncherSettings.Favorites.CONTAINER);
                     final int itemTypeIndex = c.getColumnIndexOrThrow(
@@ -1258,35 +1251,37 @@ public class LauncherModel extends BroadcastReceiver
                                                 cn.getPackageName(), user);
                                         boolean validComponent = validPkg &&
                                                 launcherApps.isActivityEnabledForProfile(cn, user);
-                                        if (!validComponent) {
-                                            itemsToRemove.add(id);
-                                        } else if (launcherApps.isAppEnabled(
-                                                manager, cn.getPackageName(),
-                                                PackageManager.GET_UNINSTALLED_PACKAGES)) {
-                                            // Package is present but not available.
-                                            allowMissingTarget = true;
-                                            disabledState = ShortcutInfo.FLAG_DISABLED_NOT_AVAILABLE;
-                                        } else if (!isSdCardReady) {
-                                            // SdCard is not ready yet. Package might get available,
-                                            // once it is ready.
-                                            Launcher.addDumpLog(TAG, "Invalid package: " + cn
-                                                    + " (check again later)", true);
-                                            HashSet<String> pkgs = sPendingPackages.get(user);
-                                            if (pkgs == null) {
-                                                pkgs = new HashSet<String>();
-                                                sPendingPackages.put(user, pkgs);
-                                            }
-                                            pkgs.add(cn.getPackageName());
-                                            allowMissingTarget = true;
-                                            // Add the icon on the workspace anyway.
+                                        if (!validComponent || !validPkg) {
+                                            if (!validComponent) {
+                                                itemsToRemove.add(id);
+                                            } else if (launcherApps.isAppEnabled(
+                                                    manager, cn.getPackageName(),
+                                                    PackageManager.GET_UNINSTALLED_PACKAGES)) {
+                                                // Package is present but not available.
+                                                allowMissingTarget = true;
+                                                disabledState = ShortcutInfo.FLAG_DISABLED_NOT_AVAILABLE;
+                                            } else if (!isSdCardReady) {
+                                                // SdCard is not ready yet. Package might get available,
+                                                // once it is ready.
+                                                Launcher.addDumpLog(TAG, "Invalid package: " + cn
+                                                        + " (check again later)", true);
+                                                HashSet<String> pkgs = sPendingPackages.get(user);
+                                                if (pkgs == null) {
+                                                    pkgs = new HashSet<String>();
+                                                    sPendingPackages.put(user, pkgs);
+                                                }
+                                                pkgs.add(cn.getPackageName());
+                                                allowMissingTarget = true;
+                                                // Add the icon on the workspace anyway.
 
-                                        } else {
-                                            // Do not wait for external media load anymore.
-                                            // Log the invalid package, and remove it
-                                            Launcher.addDumpLog(TAG,
-                                                    "Invalid package removed: " + cn, true);
-                                            itemsToRemove.add(id);
-                                            continue;
+                                            } else {
+                                                // Do not wait for external media load anymore.
+                                                // Log the invalid package, and remove it
+                                                Launcher.addDumpLog(TAG,
+                                                        "Invalid package removed: " + cn, true);
+                                                itemsToRemove.add(id);
+                                                continue;
+                                            }
                                         }
                                     }
                                 } catch (URISyntaxException e) {
@@ -2008,6 +2003,7 @@ public class LauncherModel extends BroadcastReceiver
                                 if ((si.isDisabled & ShortcutInfo.FLAG_DISABLED_NOT_AVAILABLE) != 0) {
                                     // Since package was just updated, the target must be available now.
                                     si.isDisabled &= ~ShortcutInfo.FLAG_DISABLED_NOT_AVAILABLE;
+                                    Log.d(TAG, "disabled form packageupdaded shortcut" + si);
                                     shortcutUpdated = true;
                                 }
                             }

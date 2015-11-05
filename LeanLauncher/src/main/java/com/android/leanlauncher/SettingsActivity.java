@@ -11,18 +11,15 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.support.v4.util.ArrayMap;
 import android.text.Html;
-import android.text.SpannableString;
 import android.text.method.LinkMovementMethod;
-import android.text.util.Linkify;
 import android.util.Log;
 import android.widget.TextView;
-
-import java.util.Set;
 
 /**
  * Settings for launcher
  */
-public class SettingsActivity extends PreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class SettingsActivity extends PreferenceActivity
+        implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "SettingsActivity";
 
     @Override
@@ -97,12 +94,17 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
 
                     @Override
                     protected void onPreExecute() {
-                        dialog = ProgressDialog.show(SettingsActivity.this, "", getString(R.string.dialog_refresh_icons), true);
+                        if (!SettingsActivity.this.isFinishing()) {
+                            dialog = ProgressDialog.show(SettingsActivity.this, "",
+                                    getString(R.string.dialog_refresh_icons), true);
+                        }
                     }
 
                     @Override
                     protected void onPostExecute(Void aVoid) {
-                        dialog.dismiss();
+                        if (!SettingsActivity.this.isFinishing()) {
+                            dialog.dismiss();
+                        }
                     }
 
                     @Override

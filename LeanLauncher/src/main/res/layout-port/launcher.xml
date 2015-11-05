@@ -33,6 +33,7 @@
             android:id="@+id/workspace"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/status_bar_edge_ignore"
             android:layout_marginBottom="@dimen/dynamic_grid_delete_bar_height"
             />
 

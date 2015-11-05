@@ -99,23 +99,11 @@ public class ShortcutInfo extends ItemInfo {
         return "ShortcutInfo(title=" + title + "intent=" + intent + "id=" + this.id
                 + " type=" + this.itemType + " container=" + this.container
                 + " cellX=" + cellX + " cellY=" + cellY + " spanX=" + spanX + " spanY=" + spanY
-                + " dropPos=" + Arrays.toString(dropPos) + " user=" + user + ")";
-    }
-
-    public static void dumpShortcutInfoList(String tag, String label,
-            ArrayList<ShortcutInfo> list) {
-        Log.d(tag, label + " size=" + list.size());
-        for (ShortcutInfo info: list) {
-            Log.d(tag, "   title=\"" + info.title);
-        }
+                + " dropPos=" + Arrays.toString(dropPos) + " user=" + user + "disabled=" +isDisabled + ")";
     }
 
     public ComponentName getTargetComponent() {
         return intent.getComponent();
-    }
-
-    public boolean hasStatusFlag(int flag) {
-        return (status & flag) != 0;
     }
 }
 

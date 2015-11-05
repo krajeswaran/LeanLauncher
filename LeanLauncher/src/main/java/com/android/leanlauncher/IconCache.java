@@ -166,9 +166,10 @@ public class IconCache {
     }
 
 
-    // should be called
+    // should be called in background, not thread-safe
     public void loadIconPackDrawables() {
-        if (mCurrentIconTheme == null) {
+        if (mCurrentIconTheme == null
+                || mContext.getResources().getString(R.string.pref_no_icon_theme).equals(mCurrentIconTheme)) {
             return;
         }
 
