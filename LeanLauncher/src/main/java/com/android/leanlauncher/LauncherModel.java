@@ -1628,6 +1628,9 @@ public class LauncherModel extends BroadcastReceiver
 
             bindWorkspaceScreens(oldCallbacks);
 
+            // load all icons
+            mIconCache.loadIconPackDrawables();
+
             // Load items on the current page
             bindWorkspaceItems(oldCallbacks, workspaceItems, appWidgets, null);
 
@@ -1765,9 +1768,6 @@ public class LauncherModel extends BroadcastReceiver
             // Huh? Shouldn't this be inside the Runnable below?
             final ArrayList<AppInfo> added = mBgAllAppsList.added;
             mBgAllAppsList.added = new ArrayList<AppInfo>();
-
-            // load all icons
-            mIconCache.loadIconPackDrawables();
 
             // Post callback on main thread
             mHandler.post(new Runnable() {

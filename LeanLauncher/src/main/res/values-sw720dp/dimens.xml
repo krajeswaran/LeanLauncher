@@ -27,7 +27,5 @@
     <dimen name="dragViewOffsetY">0dp</dimen>
 
 <!-- Cling -->
-    <dimen name="cling_migration_content_margin">96dp</dimen>
-    <dimen name="cling_migration_content_width">320dp</dimen>
 
 </resources>

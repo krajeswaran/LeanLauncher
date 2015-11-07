@@ -1,12 +1,12 @@
 LeanLauncher
 ============
 
-Minimal, dumb launcher forked from AOSP's [Launcher 3](https://android.googlesource.com/platform/packages/apps/Launcher3/). Removes 'fluffy' features and clutter from Launcher 3, adds a few useful features.
-Inspired by single workspace launchers like [Smart Launcher](https://play.google.com/store/apps/details?id=ginlemon.flowerfree).
+Minimal, single workspace launcher forked from AOSP's [Launcher 3](https://android.googlesource.com/platform/packages/apps/Launcher3/). Removes 'fluff' and clutter from Launcher 3, adding a few useful features.
+Inspired by launchers like [Smart Launcher](https://play.google.com/store/apps/details?id=ginlemon.flowerfree).
 
 Why
 ---
-Because I got bored on a weekend(okay, several weekends) and frustrated with launchers adding more crap I have no use far. Besides, everyone tries to write a launcher at somepoint :)
+Because I was bored on a weekend(okay, several weekends) and frustrated with launchers adding more stuff I have no use far. 
 
 Screenshots
 -----------
@@ -43,11 +43,12 @@ Todo
 - [x] fix: bottom space for remove 
 - [x] fix: widget overview mode not exiting
 - [x] Add support for icon theme
-- [ ] pref: about 
+- [x] pref: about 
 - [ ] run del script
 - [ ] run/fix in M
-- [ ] final proguard cfg + license stuff
-- [ ] commit, publish
+- [ ] final proguard cfg + license stuff + screenshots
+- [ ] commit, tag, f-droid publish
+- [ ] Add some tests maybe(...said every lazy dev ever)
 - [ ] All apps: categories/sort order support
 - [ ] Simple search widget for apps
 - [ ] Better landscape support

@@ -11,6 +11,5 @@
     <bool name="config_useDropTargetDownTransition">false</bool>
 
     <!-- Camera distance for the overscroll effect -->
-    <integer name="config_cameraDistance">18000</integer>
 
 </resources>

@@ -190,7 +190,7 @@ public class IconCache {
                     factory.setNamespaceAware(true);
                     xpp = factory.newPullParser();
                     xpp.setInput(appfilterstream, "utf-8");
-                } catch (IOException e1) {
+                } catch (IOException e) {
                     Log.d(TAG, "No appfilter.xml file");
                 }
             }

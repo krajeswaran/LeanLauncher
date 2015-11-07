@@ -7,25 +7,40 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 23
-        versionCode 1
-        versionName "1.0"
-
-        testApplicationId "com.android.leanlauncher.stress"
-        testFunctionalTest true
-        testHandleProfiling true
-        testInstrumentationRunner "android.test.runner"
+        versionCode System.getenv("BUILD_NUMBER") as Integer ?: 99999 // so you don't have to uninstall for dev builds
+        versionName "1.0" + '.' + versionCode
     }
+
     lintOptions {
         checkReleaseBuilds false
         // Or, if you prefer, you can continue to check for errors in release builds,
         // but continue the build even when errors are found:
         abortOnError false
     }
+
+    signingConfigs {
+        release {
+            storeFile file("release.keystore")
+            storePassword System.getenv("KSTOREPWD")
+            keyAlias "ReleaseKey"
+            keyPassword System.getenv("KEYPWD")
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled true
+            debuggable false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.cfg'
+            signingConfig signingConfigs.release
             zipAlignEnabled true
+
+            applicationVariants.all { variant ->
+                variant.outputs.each { output ->
+                    def file = output.outputFile
+                    output.outputFile = new File(file.parent, file.name.replace(".apk", "-v" + defaultConfig.versionName + ".apk"))
+                }
+            }
         }
     }
 }

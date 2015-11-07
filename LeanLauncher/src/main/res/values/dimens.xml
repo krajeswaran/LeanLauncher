@@ -41,9 +41,6 @@
     <dimen name="apps_customize_horizontal_padding">0dp</dimen>
 
     <!-- The AppsCustomize page indicator -->
-    <dimen name="apps_customize_page_indicator_height">12dp</dimen>
-    <dimen name="apps_customize_page_indicator_margin">4dp</dimen>
-    <dimen name="apps_customize_page_indicator_offset">16dp</dimen>
 
     <!-- Drag padding to add to the bottom of drop targets -->
     <dimen name="drop_target_drag_padding">14dp</dimen>

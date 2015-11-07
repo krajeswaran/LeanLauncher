@@ -40,3 +40,4 @@ build
 *.ipr
 *~
 *.swp
+release.keystore

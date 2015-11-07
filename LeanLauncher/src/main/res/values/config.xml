@@ -22,7 +22,6 @@
 <!-- AllApps/Customize/AppsCustomize -->
     <!-- The alpha of the AppsCustomize bg in spring loaded mode -->
     <integer name="config_workspaceScrimAlpha">55</integer>
-    <integer name="config_workspaceUnshrinkTime">300</integer>
     <integer name="config_overviewTransitionTime">250</integer>
 
     <!-- Out of 100, the percent to shrink the workspace during spring loaded mode. -->
@@ -43,12 +42,9 @@
 
     <!-- This constant stores the ratio of the all apps button drawable which
          is used for internal (baked-in) padding -->
-    <integer name="config_allAppsButtonPaddingPercent">17</integer>
 
-    <integer name="config_workspaceDefaultScreen">0</integer>
 
     <!-- Tab transition animation duration -->
-    <integer name="config_tabTransitionDuration">250</integer>
 
     <!-- The slope, in percent, of the drag movement needed to drag an item out of
          AppsCustomize (y / x * 100%)  -->
@@ -74,22 +70,15 @@
     <integer name="config_dropAnimMaxDuration">500</integer>
 
     <!-- The duration of the UserFolder opening and closing animation -->
-    <integer name="config_folderExpandDuration">120</integer>
-    <integer name="config_materialFolderExpandDuration">200</integer>
-    <integer name="config_materialFolderExpandStagger">60</integer>
 
     <!-- The distance at which the animation should take the max duration -->
     <integer name="config_dropAnimMaxDist">800</integer>
 
     <!-- Properties controlling the workspace fade-out during dragging -->
-    <integer name="config_dragFadeOutAlpha">80</integer>
-    <integer name="config_dragFadeOutDuration">250</integer>
 
     <!-- Camera distance for the overscroll effect -->
-    <integer name="config_cameraDistance">8000</integer>
 
     <!-- Memory debugging, including a memory dump icon -->
-    <bool name="debug_memory_enabled">false</bool>
 
     <!-- Name of a subclass of leanlauncher.AppFilter used to
          filter the activities shown in the launcher. Can be empty. -->
