@@ -40,28 +40,22 @@ Launcher icon from Material icons project
 Todo
 ====
 
-- [x] fix: bottom space for remove 
-- [x] fix: widget overview mode not exiting
-- [x] Add support for icon theme
-- [x] pref: about 
-- [ ] run del script
-- [ ] run/fix in M
-- [ ] final proguard cfg + license stuff + screenshots
+- [ ] landscape ui fixes + other fixes
+- [ ] screenshots
 - [ ] commit, tag, f-droid publish
 - [ ] Add some tests maybe(...said every lazy dev ever)
 - [ ] All apps: categories/sort order support
 - [ ] Simple search widget for apps
 - [ ] Better landscape support
-- [ ] Hide app, choose icon
-- [ ] double-click icon support
+- [ ] App specific prefs: Hide app, choose icon, double-click action
 - [ ] Use a less complicated model/db
 - [ ] Simple gesture support: swipe to all apps, recent tasks
-- [ ] Add more Preferences: icon customisation(rings, mono-color, normalize), layout cells?, all apps button hide
+- [ ] Add more Preferences: icon customisation(rings, mono-color, normalize), layout cells?, all apps button tap behavior, hide
 
 License
 =======
 
-    Copyright 2015 Kumaresan Rajeswaran
+    Copyright (C) 2015 Kumaresan Rajeswaran
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (C) 2015 Kumaresan Rajeswaran
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -336,7 +336,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         mNumAppsPages = (int) Math.ceil((float) mApps.size() / (mCellCountX * mCellCountY));
     }
 
-    protected void onDataReady(int width, int height) {
+    protected void onDataReady() {
         // Now that the data is ready, we can calculate the content width, the number of cells to
         // use for each page
         LauncherAppState app = LauncherAppState.getInstance();
@@ -365,7 +365,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
 
             if (Utilities.isViewAttachedToWindow(AppsCustomizePagedView.this)) {
                 setDataIsReady();
-                onDataReady(getMeasuredWidth(), getMeasuredHeight());
+                onDataReady();
             }
         }
     };
@@ -681,7 +681,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
                 false);
 
         // Start the drag
-        mLauncher.lockScreenOrientation();
+        mLauncher.lockScreenOrientation(mLauncher.getRequestedOrientation());
         mLauncher.getWorkspace().onDragStartedWithItem(createItemInfo, outline, clipAlpha);
         mDragController.startDrag(image, preview, this, createItemInfo,
                 DragController.DRAG_ACTION_COPY, previewPadding, scale);

@@ -33,8 +33,36 @@ public class SettingsActivity extends PreferenceActivity
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         sharedPreferences.registerOnSharedPreferenceChangeListener(this);
 
+        ListPreference lpIconThemePref = (ListPreference) findPreference(getString(R.string.pref_icon_theme_key));
+
+        displayIconThemePref(lpIconThemePref);
+
+        displayAboutDialog();
+    }
+
+    private void displayAboutDialog() {
+        findPreference(getString(R.string.pref_about)).
+                setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                    @Override
+                    public boolean onPreferenceClick(Preference preference) {
+                        String about = String.format(getString(R.string.about_application), BuildConfig.VERSION_NAME);
+
+                        AlertDialog d = new AlertDialog.Builder(SettingsActivity.this)
+                                .setIcon(R.mipmap.ic_launcher_home)
+                                .setCancelable(true)
+                                .setTitle(R.string.application_name)
+                                .setMessage(Html.fromHtml(about))
+                                .create();
+                        d.show();
+                        ((TextView) d.findViewById(android.R.id.message)).setMovementMethod(LinkMovementMethod.getInstance());
+
+                        return false;
+                    }
+                });
+    }
+
+    private void displayIconThemePref(ListPreference lpIconSetting) {
         ArrayMap<String, String> iconPacks = LauncherAppState.getInstance().getIconCache().getAvailableIconPacks();
-        ListPreference lpIconSetting = (ListPreference) findPreference(getString(R.string.pref_icon_theme_key));
 
         if (iconPacks != null && iconPacks.size() != 0) {
             String iconPackValues[] = iconPacks.keySet().toArray(new String[iconPacks.size() + 1]);
@@ -53,25 +81,6 @@ public class SettingsActivity extends PreferenceActivity
             lpIconSetting.setShouldDisableView(true);
             lpIconSetting.setSummary(R.string.pref_icon_theme_summary_disabled);
         }
-
-        findPreference("about").
-                setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        String about = String.format(getString(R.string.about_application), BuildConfig.VERSION_NAME);
-
-                        AlertDialog d = new AlertDialog.Builder(SettingsActivity.this)
-                                .setIcon(R.mipmap.ic_launcher_home)
-                                .setCancelable(true)
-                                .setTitle(R.string.application_name)
-                                .setMessage(Html.fromHtml(about))
-                                .create();
-                        d.show();
-                        ((TextView) d.findViewById(android.R.id.message)).setMovementMethod(LinkMovementMethod.getInstance());
-
-                        return false;
-                    }
-                });
     }
 
     @Override

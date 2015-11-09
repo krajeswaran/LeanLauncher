@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2015 Kumaresan Rajeswaran
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,9 +65,9 @@ public class IconCache {
 
     private static final boolean DEBUG = BuildConfig.DEBUG;
 
-    public static final String GO_LAUNCHER_THEME_NAME = "com.gau.go.launcherex.theme";
-    public static final String ADW_LAUNCHER_THEME_NAME = "org.adw.launcher.THEMES";
-    public static final String SMART_LAUNCHER_THEME_NAME = "ginlemon.smartlauncher.THEMES";
+    private static final String NOVA_LAUNCHER_THEME_NAME = "com.gau.go.launcherex.theme";
+    private static final String SMART_LAUNCHER_THEME_NAME = "ginlemon.smartlauncher.THEMES";
+    private static final String SMART_LAUNCHER_BUBBLE_ICONS = "ginlemon.smartlauncher.BUBBLEICONS";
 
     public String getCurrentIconTheme() {
         return mCurrentIconTheme;
@@ -140,14 +140,16 @@ public class IconCache {
         PackageManager pm = mContext.getPackageManager();
 
         // fetch installed icon packs for popular launchers
-        List<ResolveInfo> adwlauncherthemes = pm.queryIntentActivities(new Intent(ADW_LAUNCHER_THEME_NAME), PackageManager.GET_META_DATA);
-        List<ResolveInfo> golauncherthemes = pm.queryIntentActivities(new Intent(GO_LAUNCHER_THEME_NAME), PackageManager.GET_META_DATA);
-        List<ResolveInfo> smartlauncherthemes = pm.queryIntentActivities(new Intent(SMART_LAUNCHER_THEME_NAME), PackageManager.GET_META_DATA);
+        Intent novaIntent = new Intent(Intent.ACTION_MAIN);
+        novaIntent.addCategory(NOVA_LAUNCHER_THEME_NAME);
+        List<ResolveInfo> novaTheme = pm.queryIntentActivities(novaIntent, PackageManager.GET_META_DATA);
+        List<ResolveInfo> slBubbleIconTheme = pm.queryIntentActivities(new Intent(SMART_LAUNCHER_BUBBLE_ICONS), PackageManager.GET_META_DATA);
+        List<ResolveInfo> slTheme = pm.queryIntentActivities(new Intent(SMART_LAUNCHER_THEME_NAME), PackageManager.GET_META_DATA);
 
         // merge those lists
-        List<ResolveInfo> rinfo = new ArrayList<>(adwlauncherthemes);
-        rinfo.addAll(golauncherthemes);
-        rinfo.addAll(smartlauncherthemes);
+        List<ResolveInfo> rinfo = new ArrayList<>(slBubbleIconTheme);
+        rinfo.addAll(novaTheme);
+        rinfo.addAll(slTheme);
 
         for (ResolveInfo ri : rinfo) {
             String packageName = ri.activityInfo.packageName;

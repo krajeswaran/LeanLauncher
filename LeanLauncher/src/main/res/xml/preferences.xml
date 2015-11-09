@@ -11,7 +11,7 @@
         android:key="@string/pref_statusbar_enabled_key"
         android:title="@string/pref_statusbar_enabled_title"
         android:summary="@string/pref_statusbar_enabled_summary"
-        android:defaultValue="false"
+        android:defaultValue="true"
         />
 
     <ListPreference
@@ -24,7 +24,7 @@
         />
 
     <Preference
-        android:key="about"
+        android:key="@string/pref_about"
         android:title="@string/pref_about_title"
         android:summary="@string/pref_about_summary"
         />

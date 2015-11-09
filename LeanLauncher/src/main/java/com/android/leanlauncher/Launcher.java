@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2015 Kumaresan Rajeswaran
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,6 +205,7 @@ public class Launcher extends Activity
     private long mAutoAdvanceSentTime;
     private long mAutoAdvanceTimeLeft = -1;
     private ArrayMap<View, AppWidgetProviderInfo> mWidgetsToAdvance = new ArrayMap<>();
+    private int mCurrentOrientation;
     private final Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -811,6 +812,7 @@ public class Launcher extends Activity
     protected void onPause() {
         super.onPause();
         mPaused = true;
+        mCurrentOrientation = getRequestedOrientation();
         mDragController.cancelDrag();
         mDragController.resetLastGestureUpTime();
     }
@@ -3170,11 +3172,11 @@ public class Launcher extends Activity
         }
     }
 
-    public void lockScreenOrientation() {
+    public void lockScreenOrientation(int orientation) {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            setRequestedOrientation(getRequestedOrientation());
+            setRequestedOrientation(orientation);
         } else {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
+            setRequestedOrientation(orientation | ActivityInfo.SCREEN_ORIENTATION_LOCKED);
         }
     }
 
@@ -3191,7 +3193,7 @@ public class Launcher extends Activity
                 }, restoreScreenOrientationDelay);
             }
         } else {
-            lockScreenOrientation();
+            lockScreenOrientation(mCurrentOrientation);
         }
     }
 

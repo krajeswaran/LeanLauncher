@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2015 Kumaresan Rajeswaran
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -280,7 +280,7 @@ public class Workspace extends ViewGroup
 
     public void onDragStart(final DragSource source, Object info, int dragAction) {
         mIsDragOccuring = true;
-        mLauncher.lockScreenOrientation();
+        mLauncher.lockScreenOrientation(mLauncher.getRequestedOrientation());
         setChildrenBackgroundAlphaMultipliers(1f);
     }
 

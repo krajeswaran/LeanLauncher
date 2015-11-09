@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2015 Kumaresan Rajeswaran
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,9 +109,8 @@ public class BubbleTextView extends TextView {
         DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
 
         Bitmap iconBitmap = app.getIconCache().getIcon(info.intent, info.user);
-        Drawable topDrawable = Utilities.createIconDrawable(iconBitmap);
-        topDrawable.setBounds(0, 0, grid.allAppsIconSizePx, grid.allAppsIconSizePx);
-        setCompoundDrawables(null, topDrawable, null, null);
+        FastBitmapDrawable iconDrawable = Utilities.createIconDrawable(iconBitmap);
+        setCompoundDrawables(null, iconDrawable, null, null);
         setCompoundDrawablePadding(grid.iconDrawablePaddingPx);
         if (!hideTitle) {
             setText(info.title);
