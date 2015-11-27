@@ -33,11 +33,8 @@ public class LauncherAppWidgetHost extends AppWidgetHost {
 
     private final ArrayList<Runnable> mProviderChangeListeners = new ArrayList<Runnable>();
 
-    Launcher mLauncher;
-
     public LauncherAppWidgetHost(Launcher launcher, int hostId) {
         super(launcher, hostId);
-        mLauncher = launcher;
     }
 
     @Override
@@ -77,9 +74,7 @@ public class LauncherAppWidgetHost extends AppWidgetHost {
     }
 
     protected void onProvidersChanged() {
-        // Once we get the message that widget packages are updated, we need to rebind items
-        // in AppsCustomize accordingly.
-        mLauncher.bindPackagesUpdated(LauncherModel.getSortedWidgetsAndShortcuts(mLauncher));
+        LauncherAppState.getInstance().getModel().bindPackagesAgain();
 
         for (Runnable callback : mProviderChangeListeners) {
             callback.run();

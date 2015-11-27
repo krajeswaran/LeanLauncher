@@ -40,7 +40,7 @@ public class UserHandleCompat {
         }
     }
 
-    static UserHandleCompat fromUser(UserHandle user) {
+    public static UserHandleCompat fromUser(UserHandle user) {
         if (user == null) {
             return null;
         } else {

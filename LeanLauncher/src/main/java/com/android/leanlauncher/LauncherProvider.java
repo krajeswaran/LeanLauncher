@@ -47,7 +47,6 @@ import java.util.ArrayList;
 
 public class LauncherProvider extends ContentProvider {
     private static final String TAG = "LauncherProvider";
-    private static final boolean LOGD = false;
 
     private static final int DATABASE_VERSION = 20;
 
@@ -300,8 +299,6 @@ public class LauncherProvider extends ContentProvider {
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            if (LOGD) Log.d(TAG, "creating new launcher database");
-
             mMaxItemId = 1;
             mMaxScreenId = 0;
             mNewDbCreated = true;
@@ -315,20 +312,17 @@ public class LauncherProvider extends ContentProvider {
                     "title TEXT," +
                     "intent TEXT," +
                     "container INTEGER," +
-                    "screen INTEGER," +
                     "cellX INTEGER," +
                     "cellY INTEGER," +
                     "spanX INTEGER," +
                     "spanY INTEGER," +
                     "itemType INTEGER," +
                     "appWidgetId INTEGER NOT NULL DEFAULT -1," +
-                    "isShortcut INTEGER," +
-                    "iconType INTEGER," +
+                    "isHidden INTEGER," +
+                    "launchCount INTEGER," +
                     "iconPackage TEXT," +
                     "iconResource TEXT," +
-                    "icon BLOB," +
                     "uri TEXT," +
-                    "displayMode INTEGER," +
                     "appWidgetProvider TEXT," +
                     "modified INTEGER NOT NULL DEFAULT 0," +
                     "restored INTEGER NOT NULL DEFAULT 0," +

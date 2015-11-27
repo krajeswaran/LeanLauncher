@@ -380,7 +380,8 @@ public class Workspace extends ViewGroup
         mWorkspace.setOnClickListener(mLauncher);
         mWorkspace.setSoundEffectsEnabled(false);
 		mWorkspace.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
-        mWorkspace.setClipToPadding(true);
+        mWorkspace.setClipChildren(false);
+        mWorkspace.setClipToPadding(false);
 
         // Add an all apps Icon
         addAllAppsIcon();

@@ -65,7 +65,6 @@ public class PendingAppWidgetHostView extends LauncherAppWidgetHostView implemen
         mPaint.setColor(0xFFFFFFFF);
         mPaint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX,
                 getDeviceProfile().iconTextSizePx, getResources().getDisplayMetrics()));
-        setBackgroundResource(R.drawable.quantum_panel_dark);
         setWillNotDraw(false);
     }
 

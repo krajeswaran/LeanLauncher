@@ -18,7 +18,6 @@ package com.android.leanlauncher;
 
 import android.annotation.TargetApi;
 import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -37,7 +36,6 @@ import java.lang.ref.WeakReference;
 public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
     private static final String TAG = "LauncherAppState";
 
-    private final AppFilter mAppFilter;
     private final LauncherModel mModel;
     private final IconCache mIconCache;
 
@@ -84,8 +82,7 @@ public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
         mIconCache = new IconCache(sContext);
         mItemIdToViewId = new ArrayMap<>();
 
-        mAppFilter = AppFilter.loadByName(sContext.getString(R.string.app_filter_class));
-        mModel = new LauncherModel(this, mIconCache, mAppFilter);
+        mModel = new LauncherModel(this, mIconCache);
         final LauncherAppsCompat launcherApps = LauncherAppsCompat.getInstance(sContext);
         launcherApps.addOnAppsChangedCallback(mModel);
 
@@ -138,10 +135,6 @@ public class LauncherAppState implements DeviceProfile.DeviceProfileCallbacks {
 
     LauncherModel getModel() {
         return mModel;
-    }
-
-    boolean shouldShowAppOrWidgetProvider(ComponentName componentName) {
-        return mAppFilter == null || mAppFilter.shouldShowApp(componentName);
     }
 
     WidgetPreviewLoader.CacheDb getWidgetPreviewCacheDb() {

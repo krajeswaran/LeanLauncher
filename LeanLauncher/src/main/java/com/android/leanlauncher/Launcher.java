@@ -53,14 +53,10 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.StrictMode;
 import android.os.SystemClock;
-import android.preference.PreferenceManager;
 import android.support.v4.util.ArrayMap;
-import android.text.Selection;
-import android.text.SpannableStringBuilder;
 import android.text.method.TextKeyListener;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MotionEvent;
@@ -69,7 +65,6 @@ import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewAnimationUtils;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
@@ -123,7 +118,7 @@ public class Launcher extends Activity
     static final boolean DEBUG_RESUME_TIME = false;
     // The Intent extra that defines whether to ignore the launch animation
     static final String INTENT_EXTRA_IGNORE_LAUNCH_ANIMATION =
-            "com.android.leanlauncher.intent.extra.shortcut.INGORE_LAUNCH_ANIMATION";
+            "com.android.launcher3.intent.extra.shortcut.INGORE_LAUNCH_ANIMATION";
     static final int APPWIDGET_HOST_ID = 1024;
     private static final int REQUEST_CREATE_SHORTCUT = 1;
     private static final int REQUEST_CREATE_APPWIDGET = 5;
@@ -186,7 +181,6 @@ public class Launcher extends Activity
     // scroll issues (because the workspace may not have been measured yet) and extra work.
     // Instead, just save the state that we need to restore Launcher to, and commit it in onResume.
     private State mOnResumeState = State.NONE;
-    private SpannableStringBuilder mDefaultKeySsb = null;
     private DeleteDropTargetBar mDeleteDropTargetBar;
     private boolean mWorkspaceLoading = true;
     private boolean mPaused = true;
@@ -205,7 +199,7 @@ public class Launcher extends Activity
     private long mAutoAdvanceSentTime;
     private long mAutoAdvanceTimeLeft = -1;
     private ArrayMap<View, AppWidgetProviderInfo> mWidgetsToAdvance = new ArrayMap<>();
-    private int mCurrentOrientation;
+    private int mLastOrientation;
     private final Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -460,10 +454,6 @@ public class Launcher extends Activity
             // configuration change) while launcher is in the foreground
             mModel.startLoader(true, 0);
         }
-
-        // For handling default keys
-        mDefaultKeySsb = new SpannableStringBuilder();
-        Selection.setSelection(mDefaultKeySsb, 0);
 
         IntentFilter filter = new IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
         registerReceiver(mCloseSystemDialogsReceiver, filter);
@@ -725,7 +715,7 @@ public class Launcher extends Activity
         unlockScreenOrientation(true);
 
         // hide/show status bar
-        showStatusbar();
+        Utilities.showStatusbar(getWindow(), this);
 
         // Restore the previous launcher state
         if (mOnResumeState == State.WORKSPACE) {
@@ -795,24 +785,12 @@ public class Launcher extends Activity
         mWorkspace.onResume();
     }
 
-    private void showStatusbar() {
-        boolean showStatusbar = PreferenceManager.getDefaultSharedPreferences(this).
-                getBoolean(getString(R.string.pref_statusbar_enabled_key), true);
-        View decorView = getWindow().getDecorView();
-        if (showStatusbar) {
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-        } else {
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
-        }
-    }
 
     @Override
     protected void onPause() {
         super.onPause();
         mPaused = true;
-        mCurrentOrientation = getRequestedOrientation();
+        mLastOrientation = getResources().getConfiguration().orientation;
         mDragController.cancelDrag();
         mDragController.resetLastGestureUpTime();
     }
@@ -834,45 +812,6 @@ public class Launcher extends Activity
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         mHasFocus = hasFocus;
-    }
-
-    private boolean acceptFilter() {
-        final InputMethodManager inputManager = (InputMethodManager)
-                getSystemService(Context.INPUT_METHOD_SERVICE);
-        return !inputManager.isFullscreenMode();
-    }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        final int uniChar = event.getUnicodeChar();
-        final boolean handled = super.onKeyDown(keyCode, event);
-        final boolean isKeyNotWhitespace = uniChar > 0 && !Character.isWhitespace(uniChar);
-        if (!handled && acceptFilter() && isKeyNotWhitespace) {
-            boolean gotKey = TextKeyListener.getInstance().onKeyDown(mWorkspace, mDefaultKeySsb,
-                    keyCode, event);
-            if (gotKey && mDefaultKeySsb != null && mDefaultKeySsb.length() > 0) {
-                // something usable has been typed - start a search
-                // the typed text will be retrieved and cleared by
-                // showSearchDialog()
-                // If there are multiple keystrokes before the search dialog takes focus,
-                // onSearchRequested() will be called for every keystroke,
-                // but it is idempotent, so it's fine.
-                return onSearchRequested();
-            }
-        }
-
-        // Eat the long press event so the keyboard doesn't come up.
-        return keyCode == KeyEvent.KEYCODE_MENU && event.isLongPress() || handled;
-    }
-
-    private String getTypedText() {
-        return mDefaultKeySsb.toString();
-    }
-
-    private void clearTypedText() {
-        mDefaultKeySsb.clear();
-        mDefaultKeySsb.clearSpans();
-        Selection.setSelection(mDefaultKeySsb, 0);
     }
 
     /**
@@ -990,7 +929,6 @@ public class Launcher extends Activity
         mAppsCustomizeContent.setup(this, dragController);
 
         // Setup the drag controller (drop targets have to be added in reverse order in priority)
-//        dragController.setDragScoller(mWorkspace);
         dragController.setScrollView(mDragLayer);
         dragController.setMoveTarget(mWorkspace);
         dragController.addDropTarget(mWorkspace);
@@ -1226,7 +1164,6 @@ public class Launcher extends Activity
                 Log.w(TAG, "IllegalArgumentException while setting up transparent bars");
             } catch (InvocationTargetException e) {
                 Log.w(TAG, "InvocationTargetException while setting up transparent bars");
-            } finally {
             }
         }
     }
@@ -1251,37 +1188,6 @@ public class Launcher extends Activity
         // is a more appropriate event to handle
         if (mVisible) {
             mAppsCustomizeTabHost.onWindowVisible();
-            if (!mWorkspaceLoading) {
-                final ViewTreeObserver observer = mWorkspace.getViewTreeObserver();
-                // We want to let Launcher draw itself at least once before we force it to build
-                // layers on all the workspace pages, so that transitioning to Launcher from other
-                // apps is nice and speedy.
-                observer.addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
-                    private boolean mStarted = false;
-
-                    public void onDraw() {
-                        if (mStarted) return;
-                        mStarted = true;
-                        // We delay the layer building a bit in order to give
-                        // other message processing a time to run.  In particular
-                        // this avoids a delay in hiding the IME if it was
-                        // currently shown, because doing that may involve
-                        // some communication back with the app.
-                        mWorkspace.postDelayed(mBuildLayersRunnable, 500);
-                        final ViewTreeObserver.OnDrawListener listener = this;
-                        mWorkspace.post(new Runnable() {
-                            public void run() {
-                                if (mWorkspace != null &&
-                                        mWorkspace.getViewTreeObserver() != null) {
-                                    mWorkspace.getViewTreeObserver().
-                                            removeOnDrawListener(listener);
-                                }
-                            }
-                        });
-                    }
-                });
-            }
-            clearTypedText();
         }
     }
 
@@ -2154,7 +2060,7 @@ public class Launcher extends Activity
             final View revealView = toView.findViewById(R.id.fake_page);
 
             final boolean isWidgetTray = contentType == AppsCustomizePagedView.ContentType.Widgets;
-            revealView.setBackground(res.getDrawable(R.drawable.quantum_panel_dark));
+            revealView.setBackgroundColor(getResources().getColor(R.color.widget_text_panel));
 
             // Hide the real page background, and swap in the fake one
             content.setPageBackgroundsVisible(false);
@@ -2394,7 +2300,7 @@ public class Launcher extends Activity
                 final boolean isWidgetTray =
                         contentType == AppsCustomizePagedView.ContentType.Widgets;
 
-                revealView.setBackground(res.getDrawable(R.drawable.quantum_panel_dark));
+                revealView.setBackgroundColor(getResources().getColor(R.color.widget_text_panel));
 
                 int width = revealView.getMeasuredWidth();
                 int height = revealView.getMeasuredHeight();
@@ -3045,7 +2951,7 @@ public class Launcher extends Activity
         if (mAppsCustomizeContent != null) {
             mAppsCustomizeContent.setApps(apps);
             mAppsCustomizeContent.onPackagesUpdated(
-                    LauncherModel.getSortedWidgetsAndShortcuts(this));
+                    LauncherModel.getSortedWidgets(this));
         }
     }
 
@@ -3176,6 +3082,7 @@ public class Launcher extends Activity
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             setRequestedOrientation(orientation);
         } else {
+            //noinspection ResourceType
             setRequestedOrientation(orientation | ActivityInfo.SCREEN_ORIENTATION_LOCKED);
         }
     }
@@ -3193,7 +3100,7 @@ public class Launcher extends Activity
                 }, restoreScreenOrientationDelay);
             }
         } else {
-            lockScreenOrientation(mCurrentOrientation);
+            lockScreenOrientation(mLastOrientation);
         }
     }
 

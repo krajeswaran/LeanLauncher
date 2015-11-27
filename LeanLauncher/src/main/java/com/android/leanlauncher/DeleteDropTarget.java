@@ -190,7 +190,8 @@ public class DeleteDropTarget extends ButtonDropTarget {
         mActive = isVisible;
         resetHoverColor();
         mDeleteDropTargetBar.setVisibility(isVisible ? View.VISIBLE : View.GONE);
-        if (isVisible && getText().length() > 0) {
+        if (isVisible) {
+            setVisibility(View.VISIBLE);
             setText(useUninstallLabel ? R.string.delete_target_uninstall_label
                 : R.string.delete_target_label);
         }

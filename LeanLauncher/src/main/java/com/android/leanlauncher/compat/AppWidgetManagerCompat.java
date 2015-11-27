@@ -74,9 +74,4 @@ public abstract class AppWidgetManagerCompat {
             Activity activity, AppWidgetHost host, int requestCode);
 
     public abstract Drawable loadPreview(AppWidgetProviderInfo info);
-
-    public abstract Drawable loadIcon(AppWidgetProviderInfo info, IconCache cache);
-
-    public abstract Bitmap getBadgeBitmap(AppWidgetProviderInfo info, Bitmap bitmap);
-
 }

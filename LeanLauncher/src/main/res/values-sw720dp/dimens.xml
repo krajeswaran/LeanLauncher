@@ -26,6 +26,5 @@
     <dimen name="dragViewOffsetX">0dp</dimen>
     <dimen name="dragViewOffsetY">0dp</dimen>
 
-<!-- Cling -->
 
 </resources>

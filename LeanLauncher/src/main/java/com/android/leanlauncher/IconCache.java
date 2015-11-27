@@ -20,7 +20,6 @@ import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -28,7 +27,12 @@ import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
+import android.os.UserHandle;
 import android.preference.PreferenceManager;
 import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
@@ -66,8 +70,7 @@ public class IconCache {
     private static final boolean DEBUG = BuildConfig.DEBUG;
 
     private static final String NOVA_LAUNCHER_THEME_NAME = "com.gau.go.launcherex.theme";
-    private static final String SMART_LAUNCHER_THEME_NAME = "ginlemon.smartlauncher.THEMES";
-    private static final String SMART_LAUNCHER_BUBBLE_ICONS = "ginlemon.smartlauncher.BUBBLEICONS";
+    private static final String GO_LAUNCHER_THEME_NAME = "com.gau.go.launcherex.theme";
 
     public String getCurrentIconTheme() {
         return mCurrentIconTheme;
@@ -114,6 +117,11 @@ public class IconCache {
     private final ArrayMap<CacheKey, CacheEntry> mCache =
             new ArrayMap<>(INITIAL_ICON_CACHE_CAPACITY);
     private int mIconDpi;
+    private String mCurrentIconTheme = null;
+    private ArrayList<String> mIconBackgroundNames = new ArrayList<>();
+    private String mIconMaskName;
+    private String mIconFrontName;
+    private float mIconScaleFactor;
 
     public IconCache(Context context) {
         ActivityManager activityManager =
@@ -132,8 +140,6 @@ public class IconCache {
                 getString(context.getString(R.string.pref_icon_theme_key), null);
     }
 
-    private String mCurrentIconTheme = null;
-
     public ArrayMap<String, String> getAvailableIconPacks() {
         ArrayMap<String, String> availableIconPacks = new ArrayMap<>();
 
@@ -143,13 +149,11 @@ public class IconCache {
         Intent novaIntent = new Intent(Intent.ACTION_MAIN);
         novaIntent.addCategory(NOVA_LAUNCHER_THEME_NAME);
         List<ResolveInfo> novaTheme = pm.queryIntentActivities(novaIntent, PackageManager.GET_META_DATA);
-        List<ResolveInfo> slBubbleIconTheme = pm.queryIntentActivities(new Intent(SMART_LAUNCHER_BUBBLE_ICONS), PackageManager.GET_META_DATA);
-        List<ResolveInfo> slTheme = pm.queryIntentActivities(new Intent(SMART_LAUNCHER_THEME_NAME), PackageManager.GET_META_DATA);
+        List<ResolveInfo> goTheme = pm.queryIntentActivities(new Intent(GO_LAUNCHER_THEME_NAME), PackageManager.GET_META_DATA);
 
         // merge those lists
-        List<ResolveInfo> rinfo = new ArrayList<>(slBubbleIconTheme);
-        rinfo.addAll(novaTheme);
-        rinfo.addAll(slTheme);
+        List<ResolveInfo> rinfo = new ArrayList<>(novaTheme);
+        rinfo.addAll(goTheme);
 
         for (ResolveInfo ri : rinfo) {
             String packageName = ri.activityInfo.packageName;
@@ -169,7 +173,9 @@ public class IconCache {
 
 
     // should be called in background, not thread-safe
+    // gracelessly stolen from http://stackoverflow.com/a/31512017
     public void loadIconPackDrawables() {
+        final long t = SystemClock.uptimeMillis();
         if (mCurrentIconTheme == null
                 || mContext.getResources().getString(R.string.pref_no_icon_theme).equals(mCurrentIconTheme)) {
             return;
@@ -236,11 +242,30 @@ public class IconCache {
                             } else {
                                 Log.d(TAG, "ComponentName can't be obtained from: " + componentName);
                             }
+                        } else if ("iconback".equals(xpp.getName())) {
+                            for (int i = 0; i < xpp.getAttributeCount(); i++) {
+                                if (xpp.getAttributeName(i).startsWith("img")) {
+                                    mIconBackgroundNames.add(xpp.getAttributeValue(i));
+                                }
+                            }
+                        } else if ("iconmask".equals(xpp.getName())) {
+                            if (xpp.getAttributeCount() > 0 && "img1".equals(xpp.getAttributeName(0))) {
+                                mIconMaskName = xpp.getAttributeValue(0);
+                            }
+                        } else if ("iconupon".equals(xpp.getName())) {
+                            if (xpp.getAttributeCount() > 0 && "img1".equals(xpp.getAttributeName(0))) {
+                                mIconFrontName = xpp.getAttributeValue(0);
+                            }
+                        } else if ("scale".equals(xpp.getName())) {
+                            if (xpp.getAttributeCount() > 0 && "factor".equals(xpp.getAttributeName(0))) {
+                                mIconScaleFactor = Float.valueOf(xpp.getAttributeValue(0));
+                            }
                         }
                     }
                     eventType = xpp.next();
                 }
             }
+            Log.d(TAG, "Finished parsing icon pack: " + (SystemClock.uptimeMillis()-t) + "ms");
         } catch (PackageManager.NameNotFoundException e) {
             Log.d(TAG, "Cannot load icon pack" + e);
         } catch (XmlPullParserException e) {
@@ -250,11 +275,11 @@ public class IconCache {
         }
     }
 
-    public Drawable getFullResDefaultActivityIcon() {
-        return getFullResIcon(Resources.getSystem(), android.R.mipmap.sym_def_app_icon);
+    private Drawable getFullResDefaultActivityIcon() {
+        return getFullResDefaultIcon(Resources.getSystem(), android.R.mipmap.sym_def_app_icon);
     }
 
-    private Drawable getFullResIcon(Resources resources, int iconId) {
+    private Drawable getFullResDefaultIcon(Resources resources, int iconId) {
         Drawable d;
         try {
             d = resources.getDrawableForDensity(iconId, mIconDpi);
@@ -263,52 +288,6 @@ public class IconCache {
         }
 
         return (d != null) ? d : getFullResDefaultActivityIcon();
-    }
-
-    private Drawable loadDrawableFromIconPack(Resources iconPackRes, String packageName, String drawableName) {
-        if (drawableName == null) {
-            return null;
-        }
-
-        int id = iconPackRes.getIdentifier(drawableName, "drawable", packageName);
-        if (id > 0) {
-            return iconPackRes.getDrawable(id);
-        }
-        return null;
-    }
-
-    public Drawable getFullResIcon(String packageName, int iconId) {
-        if (mCurrentIconTheme != null) {
-            // load themed icon
-            Drawable icon = findDrawableFromIconPack(packageName, null);
-
-            if (icon != null) {
-                Log.d(TAG, packageName + " icon found in theme: " + mCurrentIconTheme);
-                return icon;
-            }
-        }
-
-        // continue loading default icon
-        Resources resources;
-        try {
-            resources = mPackageManager.getResourcesForApplication(packageName);
-        } catch (PackageManager.NameNotFoundException e) {
-            resources = null;
-        }
-        if (resources != null) {
-            if (iconId != 0) {
-                return getFullResIcon(resources, iconId);
-            }
-        }
-        return getFullResDefaultActivityIcon();
-    }
-
-    public int getFullResIconDpi() {
-        return mIconDpi;
-    }
-
-    public Drawable getFullResIcon(ActivityInfo info) {
-        return getFullResIcon(info.applicationInfo.packageName, info.getIconResource());
     }
 
     private Bitmap makeDefaultIcon(UserHandleCompat user) {
@@ -380,12 +359,21 @@ public class IconCache {
         application.contentDescription = entry.contentDescription;
     }
 
+    public Bitmap getIconForComponent(ComponentName componentName, UserHandle profile) {
+        if (componentName == null || TextUtils.isEmpty(componentName.getPackageName())) {
+            // happens on first load sometimes
+            return null;
+        }
+        CacheEntry entry = getEntryForPackage(componentName.getPackageName(), UserHandleCompat.fromUser(profile));
+        return entry.icon;
+    }
+
     public synchronized Bitmap getIcon(Intent intent, UserHandleCompat user) {
         ComponentName component = intent.getComponent();
         // null info means not installed, but if we have a component from the intent then
         // we should still look in the cache for restored app icons.
         if (component == null) {
-            return getDefaultIcon(user);
+            return getDefaultUserIcon(user);
         }
 
         LauncherActivityInfoCompat launcherActInfo = mLauncherApps.resolveActivity(intent, user);
@@ -393,25 +381,11 @@ public class IconCache {
         return entry.icon;
     }
 
-    public synchronized Bitmap getDefaultIcon(UserHandleCompat user) {
+    private synchronized Bitmap getDefaultUserIcon(UserHandleCompat user) {
         if (!mDefaultIcons.containsKey(user)) {
             mDefaultIcons.put(user, makeDefaultIcon(user));
         }
         return mDefaultIcons.get(user);
-    }
-
-    public synchronized Bitmap getIcon(ComponentName component, LauncherActivityInfoCompat info,
-            ArrayMap<Object, CharSequence> labelCache) {
-        if (info == null || component == null) {
-            return null;
-        }
-
-        CacheEntry entry = cacheLocked(component, info, labelCache, info.getUser(), false);
-        return entry.icon;
-    }
-
-    public boolean isDefaultIcon(Bitmap icon, UserHandleCompat user) {
-        return mDefaultIcons.get(user) == icon;
     }
 
     /**
@@ -437,15 +411,15 @@ public class IconCache {
                 }
 
                 entry.contentDescription = mUserManager.getBadgedLabelForUser(entry.title, user);
+                Drawable defaultDrawable = info.getBadgedIcon(mIconDpi);
                 if (mCurrentIconTheme != null) {
-                    entry.icon = findBitmapFromIconPack(info.getComponentName().getPackageName(), componentName.getClassName());
+                    entry.icon = createNewIconBitmap(componentName.getPackageName(), componentName.getClassName(),
+                            defaultDrawable);
                 }
 
                 if (entry.icon == null) {
                     // pick default icon
-                    Log.d(TAG, labelKey + " icon NOT FOUND in theme: " + mCurrentIconTheme);
-                    entry.icon = Utilities.createIconBitmap(
-                            info.getBadgedIcon(mIconDpi), mContext);
+                    entry.icon = Utilities.createIconBitmap(defaultDrawable, mContext);
                 }
 
                 mCache.put(cacheKey, entry);
@@ -464,67 +438,135 @@ public class IconCache {
                 if (entry.icon == null) {
                     if (DEBUG) Log.d(TAG, "using default icon for " +
                             componentName.toShortString());
-                    entry.icon = getDefaultIcon(user);
+                    entry.icon = getDefaultUserIcon(user);
                 }
             }
         }
         return entry;
     }
 
-    private Bitmap findBitmapFromIconPack(String packageName, String className) {
-        Drawable drawable = findDrawableFromIconPack(packageName, className);
+    private Bitmap createNewIconBitmap(String packageName, String className, Drawable defaultDrawable) {
+        String drawableName = findDrawableFromIconPack(packageName, className);
 
-        if (drawable == null) {
-            return null;
-        } else {
-            return Utilities.createIconBitmap(drawable, mContext);
-        }
+        return createIconBitmapFromTheme(drawableName, defaultDrawable);
     }
 
-    private Drawable findDrawableFromIconPack(String packageName, String className) {
-        try {
-            String drawableName = null;
+    private String findDrawableFromIconPack(String packageName, String className) {
+        String drawableName = null;
 
-            for (CacheKey key : mCache.keySet()) {
-                if (key != null && key.componentName.getPackageName().equals(packageName)) {
-                    CharSequence cacheDrawableName = mCache.get(key).drawableName;
-                    if (cacheDrawableName != null) {
-                        drawableName = cacheDrawableName.toString();
-                        Log.d(TAG, drawableName + " -- found for -- " + packageName);
+        for (CacheKey key : mCache.keySet()) {
+            if (key != null && key.componentName.getPackageName().equalsIgnoreCase(packageName)) {
+                CharSequence cacheDrawableName = mCache.get(key).drawableName;
+                if (cacheDrawableName != null) {
+                    drawableName = cacheDrawableName.toString();
+                    Log.d(TAG, drawableName + " -- found for -- " + packageName);
 
-                        if (className == null || className.equals(key.componentName.getClassName())) {
-                            // we've found it
-                            break;
-                        }
+                    if (className == null || className.equalsIgnoreCase(key.componentName.getClassName())) {
+                        // we've found it
+                        break;
                     }
                 }
             }
+        }
 
-            return loadDrawableFromIconPack(
-                    mPackageManager.getResourcesForApplication(mCurrentIconTheme),
-                    mCurrentIconTheme,
-                    drawableName);
-        } catch (NameNotFoundException e) {
-            Log.d(TAG, packageName + " icon not found in current icon pack " + mCurrentIconTheme);
+        return drawableName;
+    }
+
+    private Drawable loadDrawableFromIconPack(Resources iconPackRes, String packageName, String drawableName) {
+        if (TextUtils.isEmpty(drawableName)) {
             return null;
+        }
+
+        int id = iconPackRes.getIdentifier(drawableName, "drawable", packageName);
+        if (id > 0) {
+            return iconPackRes.getDrawable(id);
+        }
+        return null;
+    }
+
+    private Bitmap loadBitmapFromIconPack(Resources iconPackRes, String packageName, String drawableName) {
+        Drawable drawable = loadDrawableFromIconPack(iconPackRes, packageName, drawableName);
+
+        if (drawable != null) {
+            return Utilities.createIconBitmap(drawable, mContext);
+        }
+        return null;
+    }
+
+    public Bitmap createIconBitmapFromTheme(String iconDrawableName, Drawable defaultDrawable) {
+        Bitmap icon; Resources iconPackRes;
+        try {
+            iconPackRes = mContext.getPackageManager().getResourcesForApplication(mCurrentIconTheme);
+            icon = loadBitmapFromIconPack(iconPackRes, mCurrentIconTheme, iconDrawableName);
+        } catch (NameNotFoundException e) {
+            Log.d(TAG, "Can't find icon theme: " + mCurrentIconTheme + " for " + iconDrawableName);
+            return null;
+        }
+
+        if (icon == null) {
+            Log.d(TAG, "Using default icon, can't find icon drawable: " + iconDrawableName + " in " + mCurrentIconTheme);
+            icon = Utilities.createIconBitmap(defaultDrawable, mContext);
+        }
+
+
+        if (mIconBackgroundNames.size() < 1) {
+            // we are done
+            return icon;
+        } else {
+            // maybe find bg by icon hue? don't like random bg
+            int backImageInd = Math.round(mIconBackgroundNames.size() / 2);
+            Bitmap background = loadBitmapFromIconPack(iconPackRes, mCurrentIconTheme, mIconBackgroundNames.get(backImageInd));
+            if (background == null) {
+                Log.d(TAG, "Can't load background image: " + mIconBackgroundNames.get(backImageInd));
+                return icon;
+            }
+
+            int w = background.getWidth(), h = background.getHeight();
+            Bitmap result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            final Canvas tempCanvas = new Canvas(result);
+
+            // draw the background first
+            tempCanvas.drawBitmap(background, 0, 0, null);
+
+            // create a mutable mask bitmap with the same mask
+            if (icon.getWidth() > w || icon.getHeight() > h) {
+                mIconScaleFactor = (mIconScaleFactor == 0) ? 1 : mIconScaleFactor;
+                icon = Bitmap.createScaledBitmap(icon, (int) (w * mIconScaleFactor), (int) (h * mIconScaleFactor), false);
+            }
+
+            Bitmap maskImage = loadBitmapFromIconPack(iconPackRes, mCurrentIconTheme, mIconMaskName);
+            if (maskImage != null) {
+                renderIconBackground(icon, maskImage, tempCanvas, w, h);
+            } else {
+                renderIconBackground(icon, background, tempCanvas, w, h);
+            }
+
+            // paint the front
+            Bitmap frontImage = loadBitmapFromIconPack(iconPackRes, mCurrentIconTheme, mIconFrontName);
+            if (frontImage != null) {
+                tempCanvas.drawBitmap(frontImage, 0, 0, null);
+            }
+
+            // clean up canvas
+            tempCanvas.setBitmap(null);
+
+            return result;
         }
     }
 
-    /**
-     * Adds a default package entry in the cache. This entry is not persisted and will be removed
-     * when the cache is flushed.
-     */
-    public synchronized void cachePackageInstallInfo(String packageName, UserHandleCompat user,
-            Bitmap icon, CharSequence title) {
-        remove(packageName, user);
+    private void renderIconBackground(Bitmap icon, Bitmap maskImage, Canvas tempCanvas, int w, int h) {
+        // draw the scaled bitmap with mask
+        Bitmap mutableMask = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
 
-        CacheEntry entry = getEntryForPackage(packageName, user);
-        if (!TextUtils.isEmpty(title)) {
-            entry.title = title;
-        }
-        if (icon != null) {
-            entry.icon = Utilities.createIconBitmap(icon, mContext);
-        }
+        Canvas maskCanvas = new Canvas(mutableMask);
+        maskCanvas.drawBitmap(maskImage, 0, 0, new Paint());
+
+        // paint the bitmap with mask into the result
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+        tempCanvas.drawBitmap(icon, (w - icon.getWidth()) / 2, (h - icon.getHeight()) / 2, null);
+        tempCanvas.drawBitmap(mutableMask, 0, 0, paint);
+        paint.setXfermode(null);
     }
 
     /**
@@ -541,14 +583,15 @@ public class IconCache {
             try {
                 ApplicationInfo info = mPackageManager.getApplicationInfo(packageName, 0);
                 entry.title = info.loadLabel(mPackageManager);
+                Drawable defaultDrawable = info.loadIcon(mPackageManager);
                 if (mCurrentIconTheme != null) {
-                    entry.icon = findBitmapFromIconPack(packageName, null);
+                    entry.icon = createNewIconBitmap(packageName, null, defaultDrawable);
                 }
 
                 if (entry.icon == null) {
                     // pick default icon
                     Log.d(TAG, packageName + " icon NOT FOUND in theme = " + mCurrentIconTheme);
-                    entry.icon = Utilities.createIconBitmap(info.loadIcon(mPackageManager), mContext);
+                    entry.icon = Utilities.createIconBitmap(defaultDrawable, mContext);
                 }
                 mCache.put(cacheKey, entry);
             } catch (NameNotFoundException e) {

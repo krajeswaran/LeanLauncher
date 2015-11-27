@@ -17,11 +17,11 @@
 <resources>
 <!-- QSB -->
     <dimen name="toolbar_button_vertical_padding">0dip</dimen>
-    <dimen name="toolbar_button_horizontal_padding">0dip</dimen>
+    <dimen name="toolbar_button_horizontal_padding">20dip</dimen>
     <dimen name="dynamic_grid_delete_bar_height">24dp</dimen>
 
 <!-- AppsCustomize -->
-    <dimen name="app_icon_size">24dp</dimen>
+    <dimen name="app_icon_size">48dp</dimen>
     <integer name="apps_customize_widget_cell_count_x">3</integer>
     <integer name="apps_customize_widget_cell_count_y">2</integer>
 </resources>

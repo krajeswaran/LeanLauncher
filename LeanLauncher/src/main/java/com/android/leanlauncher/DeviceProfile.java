@@ -495,25 +495,13 @@ public class DeviceProfile {
     public void layout(Launcher launcher) {
         FrameLayout.LayoutParams lp;
         Resources res = launcher.getResources();
-        boolean hasVerticalBarLayout = isLandscape;
 
         // Layout the search bar space
         View deleteDropTargetBar = launcher.getDeleteDropBar();
         lp = (FrameLayout.LayoutParams) deleteDropTargetBar.getLayoutParams();
-        if (hasVerticalBarLayout) {
-            // Vertical search bar space
-            lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-            lp.width = deleteBarSpaceWidthPx;
-            lp.height = deleteBarSpaceHeightPx;
-
-            LinearLayout targets = (LinearLayout) deleteDropTargetBar.findViewById(R.id.drag_target_bar);
-            targets.setOrientation(LinearLayout.VERTICAL);
-        } else {
-            // Horizontal search bar space
-            lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-            lp.width = deleteBarSpaceWidthPx;
-            lp.height = deleteBarSpaceHeightPx;
-        }
+        lp.gravity = Gravity.BOTTOM | Gravity.CENTER_VERTICAL;
+        lp.width = deleteBarSpaceWidthPx;
+        lp.height = deleteBarSpaceHeightPx;
         deleteDropTargetBar.setLayoutParams(lp);
 
         // Layout the workspace
@@ -569,7 +557,6 @@ public class DeviceProfile {
                 padding.bottom = Math.max(0, pageIndicatorHeight - paddingTB);
 
                 pagedView.setWidgetsPageIndicatorPadding(pageIndicatorHeight);
-                fakePage.setBackground(res.getDrawable(R.drawable.quantum_panel_dark));
 
                 // Horizontal padding for the whole paged view
                 int pagedFixedViewPadding =

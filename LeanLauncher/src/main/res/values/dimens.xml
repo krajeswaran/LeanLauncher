@@ -32,7 +32,6 @@
     <dimen name="workspace_max_gap">16dp</dimen>
     <dimen name="workspace_overscroll_drawable_padding">0dp</dimen>
 
-<!-- QSB -->
     <dimen name="toolbar_button_vertical_padding">2dip</dimen>
     <dimen name="toolbar_button_horizontal_padding">12dip</dimen>
 
@@ -71,9 +70,16 @@
     <dimen name="shortcut_preview_padding_right">0dp</dimen>
     <dimen name="shortcut_preview_padding_top">0dp</dimen>
 
-<!-- Sizes for managed profile badges -->
     <dimen name="profile_badge_size">24dp</dimen>
     <dimen name="profile_badge_margin">4dp</dimen>
-    <dimen name="status_bar_edge_ignore">12dp</dimen>
-    <dimen name="all_apps_status_bar_edge_ignore">16dp</dimen>
+
+    <dimen name="status_bar_edge_ignore">16dp</dimen>
+    <dimen name="search_widget_bg_padding">36dp</dimen>
+    <dimen name="search_widget_drawable_padding">10dp</dimen>
+    <dimen name="search_item_bottom_padding">8dp</dimen>
+    <dimen name="search_widget_text_size">18sp</dimen>
+    <dimen name="search_bar_height">40dp</dimen>
+    <dimen name="search_widget_min_height">110dp</dimen>
+    <dimen name="search_widget_min_width">250dp</dimen>
+    <dimen name="search_bar_autocomplete_height">48dp</dimen>
 </resources>

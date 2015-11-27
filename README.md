@@ -34,18 +34,22 @@ Changelog
 Credits
 =======
 
-Forked from Launcher3 at https://android.googlesource.com/platform/packages/apps/Launcher3
-Launcher icon from Material icons project
+* Forked from Launcher3 at https://android.googlesource.com/platform/packages/apps/Launcher3
+* Launcher icon from Material icons project
 
 Todo
 ====
 
-- [ ] landscape ui fixes + other fixes
+- [ ] landscape: xxxhdpi remove button, app info labels,  portrait xxx: workspace low margin too high, 
+- [ ] icon loading polish: icon masking 
+- [ ] sd card boot thing: perf issue + apps disappearing 
+- [x] search widget: dropdown height
+- [x] Simple search widget for apps
+- [x] leaks + orientation not snapping back from app?
 - [ ] screenshots
 - [ ] commit, tag, f-droid publish
 - [ ] Add some tests maybe(...said every lazy dev ever)
 - [ ] All apps: categories/sort order support
-- [ ] Simple search widget for apps
 - [ ] Better landscape support
 - [ ] App specific prefs: Hide app, choose icon, double-click action
 - [ ] Use a less complicated model/db

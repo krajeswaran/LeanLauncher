@@ -49,6 +49,7 @@ import android.widget.Toast;
 
 import com.android.leanlauncher.DropTarget.DragObject;
 import com.android.leanlauncher.compat.AppWidgetManagerCompat;
+import com.android.leanlauncher.compat.UserHandleCompat;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -389,9 +390,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         for (Object o : widgetsAndShortcuts) {
             if (o instanceof AppWidgetProviderInfo) {
                 AppWidgetProviderInfo widget = (AppWidgetProviderInfo) o;
-                if (!app.shouldShowAppOrWidgetProvider(widget.provider)) {
-                    continue;
-                }
+                // TODO Hide widget if app is hidden by user
                 if (widget.minWidth > 0 && widget.minHeight > 0) {
                     // Ensure that all widgets we show can be added on a workspace of this size
                     int[] spanXY = Launcher.getSpanForWidget(mLauncher, widget);
@@ -667,8 +666,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
             }
         } else {
             PendingAddShortcutInfo createShortcutInfo = (PendingAddShortcutInfo) v.getTag();
-            Drawable icon = mIconCache.getFullResIcon(createShortcutInfo.shortcutActivityInfo);
-            preview = Utilities.createIconBitmap(icon, mLauncher);
+            preview = mIconCache.getIcon(createShortcutInfo.getIntent(), UserHandleCompat.myUserHandle());
             createItemInfo.spanX = createItemInfo.spanY = 1;
         }
 
@@ -928,12 +926,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         int heightSpec = MeasureSpec.makeMeasureSpec(mContentHeight, MeasureSpec.AT_MOST);
         layout.measure(widthSpec, heightSpec);
 
-        Drawable bg = getContext().getResources().getDrawable(R.drawable.quantum_panel_dark);
-        if (bg != null) {
-            bg.setAlpha(mPageBackgroundsVisible ? 255: 0);
-            layout.setBackground(bg);
-        }
-
         setVisibilityOnChildren(layout, View.VISIBLE);
     }
 
@@ -1087,11 +1079,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         int widthSpec = MeasureSpec.makeMeasureSpec(mContentWidth, MeasureSpec.AT_MOST);
         int heightSpec = MeasureSpec.makeMeasureSpec(mContentHeight, MeasureSpec.AT_MOST);
 
-        Drawable bg = getContext().getResources().getDrawable(R.drawable.quantum_panel_dark);
-        if (bg != null) {
-            bg.setAlpha(mPageBackgroundsVisible ? 255 : 0);
-            layout.setBackground(bg);
-        }
         layout.measure(widthSpec, heightSpec);
     }
 

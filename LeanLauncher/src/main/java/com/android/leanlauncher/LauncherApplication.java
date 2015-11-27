@@ -18,12 +18,15 @@ package com.android.leanlauncher;
 
 import android.app.Application;
 
+import com.squareup.leakcanary.LeakCanary;
+
 public class LauncherApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
         LauncherAppState.setApplicationContext(this);
         LauncherAppState.getInstance();
+        LeakCanary.install(this);
     }
 
     @Override
