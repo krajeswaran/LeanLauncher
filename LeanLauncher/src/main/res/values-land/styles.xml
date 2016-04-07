@@ -22,10 +22,10 @@
     <!-- This style applies to the drop target when it is shown in the sidebar -->
     <style name="DropTargetButton" parent="DropTargetButtonBase">
         <item name="android:drawablePadding">3dp</item>
-        <item name="android:paddingTop">@dimen/toolbar_button_vertical_padding</item>
-        <item name="android:paddingBottom">@dimen/toolbar_button_vertical_padding</item>
-        <item name="android:paddingLeft">@dimen/toolbar_button_horizontal_padding</item>
-        <item name="android:paddingRight">@dimen/toolbar_button_horizontal_padding</item>
+        <item name="android:paddingTop">2dp</item>
+        <item name="android:paddingBottom">2dp</item>
+        <item name="android:paddingLeft">50dp</item>
+        <item name="android:paddingRight">20dp</item>
         <item name="android:shadowColor">#DD000000</item>
     </style>
 

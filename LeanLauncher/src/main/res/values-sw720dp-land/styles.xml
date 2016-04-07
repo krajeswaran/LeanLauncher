@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~   Copyright (C) 2015. Kumaresan Rajeswaran
   ~
@@ -16,11 +17,8 @@
   -->
 
 <resources>
-    <bool name="config_largeHeap">true</bool>
-    <bool name="is_large_tablet">true</bool>
-
-<!-- AllApps/Customize/AppsCustomize -->
-    <!-- Out of 100, the percent to shrink the workspace during spring loaded mode. -->
-    <integer name="config_workspaceSpringLoadShrinkPercentage">90</integer>
-
+    <style name="DropTargetButton" parent="DropTargetButtonBase">
+        <item name="android:paddingLeft">90dp</item>
+        <item name="android:paddingRight">40dp</item>
+    </style>
 </resources>

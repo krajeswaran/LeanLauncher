@@ -56,21 +56,6 @@ public class ShortcutInfo extends ItemInfo {
      */
     int isDisabled = DEFAULT;
 
-    /**
-     * Flag to indicate if the shortcut is visible on all apps
-     */
-    boolean isHidden;
-
-    /**
-     * Count of times this shortcut was launched
-     */
-    int launchCounter = 0;
-
-    /**
-     * shortcut icon customized by user
-     */
-    Intent.ShortcutIconResource iconResource;
-
     int flags = 0;
 
     ShortcutInfo() {
@@ -89,7 +74,7 @@ public class ShortcutInfo extends ItemInfo {
     }
 
     public Bitmap getIcon(IconCache iconCache) {
-        return iconCache.getIcon(intent, user);
+        return iconCache.getAppIcon(this);
     }
 
     @Override
@@ -102,16 +87,6 @@ public class ShortcutInfo extends ItemInfo {
         String uri =
                  intent != null ? intent.toUri(0) : null;
         values.put(LauncherSettings.BaseLauncherColumns.INTENT, uri);
-
-        if (iconResource != null) {
-            values.put(LauncherSettings.BaseLauncherColumns.ICON_PACKAGE,
-                    iconResource.packageName);
-            values.put(LauncherSettings.BaseLauncherColumns.ICON_RESOURCE,
-                    iconResource.resourceName);
-        }
-
-        values.put(LauncherSettings.Favorites.IS_HIDDEN, isHidden);
-        values.put(LauncherSettings.Favorites.LAUNCH_COUNT, launchCounter);
     }
 
     @Override

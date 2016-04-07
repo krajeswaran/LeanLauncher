@@ -83,7 +83,7 @@ public class SettingsActivity extends PreferenceActivity
 
         if (iconPacks != null && iconPacks.size() != 0) {
             String iconPackValues[] = iconPacks.keySet().toArray(new String[iconPacks.size() + 1]);
-            iconPackValues[iconPacks.size()] = getString(R.string.pref_no_icon_theme);
+            iconPackValues[iconPacks.size()] = "";
 
             String[] iconPackTitles = new String[iconPacks.size() + 1];
             for (int i = 0; i < iconPacks.size(); i++) {
@@ -105,12 +105,10 @@ public class SettingsActivity extends PreferenceActivity
         if (getString(R.string.pref_icon_theme_key).equals(key)) {
             final IconCache iconCache = LauncherAppState.getInstance().getIconCache();
             final String changedIconTheme = sharedPreferences.getString(key, "");
-            if (!changedIconTheme.equals(iconCache.getCurrentIconTheme())) {
+
+            if (!iconCache.getCurrentIconTheme().equals(changedIconTheme)) {
                 Log.d(TAG, "Refreshing icon theme for = " + changedIconTheme);
-                iconCache.setCurrentIconTheme(
-                        (changedIconTheme.equals(getString(R.string.pref_no_icon_theme))) ?
-                                null :
-                                changedIconTheme);
+                iconCache.setCurrentIconTheme(changedIconTheme);
                 iconCache.flush();
 
                 // need to make the user wait until icon pack's loaded
@@ -135,7 +133,7 @@ public class SettingsActivity extends PreferenceActivity
 
                     @Override
                     protected Void doInBackground(Void... params) {
-                        iconCache.loadIconPackDrawables();
+                        iconCache.loadIconPackDrawables(true);
                         LauncherAppState.getInstance().getModel().rebindItemsOnIconThemeChange();
                         return null;
                     }

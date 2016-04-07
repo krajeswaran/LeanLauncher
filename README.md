@@ -40,9 +40,9 @@ Credits
 Todo
 ====
 
-- [ ] landscape: xxxhdpi remove button, app info labels,  portrait xxx: workspace low margin too high, 
-- [ ] icon loading polish: icon masking 
-- [ ] sd card boot thing: perf issue + apps disappearing 
+- [ ] landscape: remove button
+- [ ] icon loading polish: reload not remembered
+- [ ] sd card boot thing:  apps disappearing 
 - [x] search widget: dropdown height
 - [x] Simple search widget for apps
 - [x] leaks + orientation not snapping back from app?

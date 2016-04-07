@@ -146,7 +146,7 @@ class AllAppsList {
                     add(new AppInfo(context, info, user, mIconCache, null));
                 } else {
                     mIconCache.remove(applicationInfo.componentName, user);
-                    mIconCache.getTitleAndIcon(applicationInfo, info, null);
+                    mIconCache.fetchAppIcon(applicationInfo, info, null);
                     modified.add(applicationInfo);
                 }
             }

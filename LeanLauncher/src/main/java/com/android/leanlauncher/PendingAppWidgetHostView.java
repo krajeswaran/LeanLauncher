@@ -102,7 +102,7 @@ public class PendingAppWidgetHostView extends LauncherAppWidgetHostView implemen
     }
 
     public void updateIcon(IconCache cache) {
-        Bitmap icon = cache.getIcon(mIconLookupIntent, mInfo.user);
+        Bitmap icon = cache.getIcon(mIconLookupIntent, mInfo.user, null);
         if (mIcon == icon) {
             return;
         }

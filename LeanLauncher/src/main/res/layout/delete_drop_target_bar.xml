@@ -17,7 +17,7 @@
 <com.android.leanlauncher.DeleteDropTargetBar xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_gravity="bottom"
+    android:orientation="horizontal"
     android:focusable="false"
     >
 
@@ -28,26 +28,46 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
-        android:layout_gravity="center"
-        android:baselineAligned="true">
+        android:baselineAligned="false"
+        android:layout_gravity="center">
 
         <!-- Delete target -->
-        <com.android.leanlauncher.DeleteDropTarget
+        <FrameLayout
             android:layout_weight="1"
-            android:id="@+id/delete_target_text"
-            style="@style/DropTargetButton"
-            android:drawableStart="@drawable/remove_target_selector"
-            android:drawableLeft="@drawable/remove_target_selector"
-            android:text="@string/delete_zone_label_workspace" />
+            android:layout_width="0dp"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:layout_height="match_parent">
+
+            <com.android.leanlauncher.DeleteDropTarget
+                android:id="@+id/delete_target_text"
+                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                android:layout_gravity="center"
+                style="@style/DropTargetButton"
+                android:drawableStart="@drawable/remove_target_selector"
+                android:drawableLeft="@drawable/remove_target_selector"
+                android:text="@string/delete_zone_label_workspace" />
+        </FrameLayout>
 
         <!-- Info target -->
-        <com.android.leanlauncher.InfoDropTarget
+        <FrameLayout
             android:layout_weight="1"
-            android:id="@+id/info_target_text"
-            style="@style/DropTargetButton"
-            android:drawableStart="@drawable/info_target_selector"
-            android:drawableLeft="@drawable/info_target_selector"
-            android:text="@string/info_target_label" />
+            android:layout_gravity="center"
+            android:layout_width="0dp"
+            android:gravity="center"
+            android:layout_height="match_parent">
+
+            <com.android.leanlauncher.InfoDropTarget
+                android:id="@+id/info_target_text"
+                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                android:layout_gravity="center"
+                style="@style/DropTargetButton"
+                android:drawableStart="@drawable/info_target_selector"
+                android:drawableLeft="@drawable/info_target_selector"
+                android:text="@string/info_target_label" />
+        </FrameLayout>
     </LinearLayout>
 
 </com.android.leanlauncher.DeleteDropTargetBar>

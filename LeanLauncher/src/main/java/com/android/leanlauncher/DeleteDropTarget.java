@@ -40,6 +40,7 @@ import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
+import android.widget.LinearLayout;
 
 import com.android.leanlauncher.compat.UserHandleCompat;
 
@@ -94,13 +95,8 @@ public class DeleteDropTarget extends ButtonDropTarget {
     }
     private boolean isAllAppsWidget(DragSource source, Object info) {
         if (source instanceof AppsCustomizePagedView) {
-            if (info instanceof PendingAddItemInfo) {
-                PendingAddItemInfo addInfo = (PendingAddItemInfo) info;
-                switch (addInfo.itemType) {
-                    case LauncherSettings.Favorites.ITEM_TYPE_SHORTCUT:
-                    case LauncherSettings.Favorites.ITEM_TYPE_APPWIDGET:
-                        return true;
-                }
+            if (info instanceof PendingAddWidgetInfo) {
+                return true;
             }
         }
         return false;
@@ -180,8 +176,10 @@ public class DeleteDropTarget extends ButtonDropTarget {
 
         if (useUninstallLabel) {
             setCompoundDrawablesRelativeWithIntrinsicBounds(mUninstallDrawable, null, null, null);
+            setText(R.string.delete_target_uninstall_label);
         } else if (useDeleteLabel) {
             setCompoundDrawablesRelativeWithIntrinsicBounds(mRemoveDrawable, null, null, null);
+            setText(R.string.delete_target_label);
         } else {
             isVisible = false;
         }
@@ -190,11 +188,6 @@ public class DeleteDropTarget extends ButtonDropTarget {
         mActive = isVisible;
         resetHoverColor();
         mDeleteDropTargetBar.setVisibility(isVisible ? View.VISIBLE : View.GONE);
-        if (isVisible) {
-            setVisibility(View.VISIBLE);
-            setText(useUninstallLabel ? R.string.delete_target_uninstall_label
-                : R.string.delete_target_label);
-        }
     }
 
     @Override

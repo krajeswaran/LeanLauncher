@@ -121,7 +121,7 @@ public class SearchAppsArrayAdapter extends ArrayAdapter<AppInfo> {
         viewHolder.appTitle.setText(app.title);
 
         Drawable icon = new BitmapDrawable(getContext().getResources(),
-                LauncherAppState.getInstance().getIconCache().getIcon(app.intent, UserHandleCompat.myUserHandle()));
+                LauncherAppState.getInstance().getIconCache().getAppIcon(app));
         viewHolder.appIcon.setImageDrawable(icon);
 
         convertView.setOnClickListener(new View.OnClickListener() {
