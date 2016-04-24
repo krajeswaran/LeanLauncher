@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.1"
+    buildToolsVersion "23.0.2"
 
     defaultConfig {
         minSdkVersion 16
@@ -21,15 +21,16 @@ android {
     signingConfigs {
         release {
             storeFile file("release.keystore")
-            storePassword System.getenv("KSTOREPWD")
             keyAlias "ReleaseKey"
-            keyPassword System.getenv("KEYPWD")
+            storePassword System.console().readLine("\nKeystore password: ")
+            keyPassword System.console().readLine("\nKey password: ")
         }
     }
 
     buildTypes {
         release {
             minifyEnabled true
+            shrinkResources true
             debuggable false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.cfg'
             signingConfig signingConfigs.release
@@ -46,6 +47,6 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:support-v13:23.0.1'
+    compile 'com.android.support:support-v13:23.1.1'
 }
 

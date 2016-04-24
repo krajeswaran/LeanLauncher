@@ -35,7 +35,7 @@ Credits
 =======
 
 Forked from Launcher3 at https://android.googlesource.com/platform/packages/apps/Launcher3
-Launcher icon from Material icons project
+Launcher icon from Material icons project + Android Asset Studio
 
 Todo
 ====
