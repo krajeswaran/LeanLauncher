@@ -1,11 +1,26 @@
+/*
+ *   Copyright (C) 2015. Kumaresan Rajeswaran
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
+
 package com.android.leanlauncher;
 
 import android.appwidget.AppWidgetProviderInfo;
-import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteCantOpenDatabaseException;
@@ -18,8 +33,6 @@ import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
@@ -27,20 +40,17 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.support.v4.util.ArrayMap;
 import android.util.Log;
 import com.android.leanlauncher.compat.AppWidgetManagerCompat;
+import com.android.leanlauncher.compat.UserHandleCompat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
@@ -325,23 +335,14 @@ public class WidgetPreviewLoader {
     }
 
     private static final String WIDGET_PREFIX = "Widget:";
-    private static final String SHORTCUT_PREFIX = "Shortcut:";
 
     private static String getObjectName(Object o) {
         // should cache the string builder
         StringBuilder sb = new StringBuilder();
-        String output;
+        String output = null;
         if (o instanceof AppWidgetProviderInfo) {
             sb.append(WIDGET_PREFIX);
             sb.append(o.toString());
-            output = sb.toString();
-            sb.setLength(0);
-        } else {
-            sb.append(SHORTCUT_PREFIX);
-
-            ResolveInfo info = (ResolveInfo) o;
-            sb.append(new ComponentName(info.activityInfo.packageName,
-                    info.activityInfo.name).flattenToString());
             output = sb.toString();
             sb.setLength(0);
         }
@@ -352,8 +353,7 @@ public class WidgetPreviewLoader {
         if (o instanceof AppWidgetProviderInfo) {
             return ((AppWidgetProviderInfo) o).provider.getPackageName();
         } else {
-            ResolveInfo info = (ResolveInfo) o;
-            return info.activityInfo.packageName;
+            return null;
         }
     }
 
@@ -399,13 +399,10 @@ public class WidgetPreviewLoader {
                             CacheDb.COLUMN_NAME + " LIKE ? OR " +
                             CacheDb.COLUMN_NAME + " LIKE ?", // SELECT query
                             new String[] {
-                                    WIDGET_PREFIX + packageName + "/%",
-                                    SHORTCUT_PREFIX + packageName + "/%"
+                                    WIDGET_PREFIX + packageName + "/%"
                             } // args to SELECT query
                     );
-                } catch (SQLiteDiskIOException e) {
-                } catch (SQLiteCantOpenDatabaseException e) {
-                    throw e;
+                } catch (SQLiteDiskIOException ignored) {
                 }
                 synchronized(sInvalidPackages) {
                     sInvalidPackages.remove(packageName);
@@ -423,9 +420,7 @@ public class WidgetPreviewLoader {
                     db.delete(CacheDb.TABLE_NAME,
                             CacheDb.COLUMN_NAME + " = ? ", // SELECT query
                             new String[] { objectName }); // args to SELECT query
-                } catch (SQLiteDiskIOException e) {
-                } catch (SQLiteCantOpenDatabaseException e) {
-                    throw e;
+                } catch (SQLiteDiskIOException ignored) {
                 }
                 return null;
             }
@@ -482,8 +477,7 @@ public class WidgetPreviewLoader {
         if (info instanceof AppWidgetProviderInfo) {
             return generateWidgetPreview((AppWidgetProviderInfo) info, preview);
         } else {
-            return generateShortcutPreview(
-                    (ResolveInfo) info, mPreviewBitmapWidth, mPreviewBitmapHeight, preview);
+            return null;
         }
     }
 
@@ -509,7 +503,6 @@ public class WidgetPreviewLoader {
             int maxPreviewWidth, int maxPreviewHeight, Bitmap preview, int[] preScaledWidthOut) {
         // Load the preview image if possible
         if (maxPreviewWidth < 0) maxPreviewWidth = Integer.MAX_VALUE;
-        if (maxPreviewHeight < 0) maxPreviewHeight = Integer.MAX_VALUE;
 
         Drawable drawable = null;
         if (info.previewImage != 0) {
@@ -566,16 +559,15 @@ public class WidgetPreviewLoader {
                     / (mAppIconSize + 2 * minOffset), 1f);
 
             try {
-                Drawable icon = mManager.loadIcon(info, mIconCache);
+                Bitmap icon = mIconCache.getIconForComponent(info.configure, UserHandleCompat.myUserHandle());
                 if (icon != null) {
                     int hoffset = (int) ((previewDrawableWidth - mAppIconSize * iconScale) / 2);
                     int yoffset = (int) ((previewDrawableHeight - mAppIconSize * iconScale) / 2);
-                    icon = mutateOnMainThread(icon);
-                    renderDrawableToBitmap(icon, defaultPreview, hoffset,
+                    renderBitmapIconOnPreview(icon, defaultPreview, hoffset,
                             yoffset, (int) (mAppIconSize * iconScale),
                             (int) (mAppIconSize * iconScale));
                 }
-            } catch (Resources.NotFoundException e) {
+            } catch (Resources.NotFoundException ignored) {
             }
         }
 
@@ -620,68 +612,23 @@ public class WidgetPreviewLoader {
             c.drawBitmap(defaultPreview, src, dest, p);
             c.setBitmap(null);
         }
-        return mManager.getBadgeBitmap(info, preview);
+        return preview;
     }
 
-    private Bitmap generateShortcutPreview(
-            ResolveInfo info, int maxWidth, int maxHeight, Bitmap preview) {
-        Bitmap tempBitmap = mCachedShortcutPreviewBitmap.get();
-        final Canvas c = mCachedShortcutPreviewCanvas.get();
-        if (tempBitmap == null ||
-                tempBitmap.getWidth() != maxWidth ||
-                tempBitmap.getHeight() != maxHeight) {
-            tempBitmap = Bitmap.createBitmap(maxWidth, maxHeight, Config.ARGB_8888);
-            mCachedShortcutPreviewBitmap.set(tempBitmap);
-        } else {
-            c.setBitmap(tempBitmap);
-            c.drawColor(0, PorterDuff.Mode.CLEAR);
+    private static void renderBitmapIconOnPreview(
+            Bitmap icon, Bitmap preview, int x, int y, int w, int h) {
+        if (preview != null) {
+            final Canvas c = new Canvas(preview);
+            icon = Bitmap.createScaledBitmap(icon, w, h, false);
+            c.drawBitmap(icon, x, y, null);
             c.setBitmap(null);
         }
-        // Render the icon
-        Drawable icon = mutateOnMainThread(mIconCache.getFullResIcon(info.activityInfo));
-
-        int paddingTop = mContext.
-                getResources().getDimensionPixelOffset(R.dimen.shortcut_preview_padding_top);
-        int paddingLeft = mContext.
-                getResources().getDimensionPixelOffset(R.dimen.shortcut_preview_padding_left);
-        int paddingRight = mContext.
-                getResources().getDimensionPixelOffset(R.dimen.shortcut_preview_padding_right);
-
-        int scaledIconWidth = (maxWidth - paddingLeft - paddingRight);
-
-        renderDrawableToBitmap(
-                icon, tempBitmap, paddingLeft, paddingTop, scaledIconWidth, scaledIconWidth);
-
-        if (preview != null &&
-                (preview.getWidth() != maxWidth || preview.getHeight() != maxHeight)) {
-            throw new RuntimeException("Improperly sized bitmap passed as argument");
-        } else if (preview == null) {
-            preview = Bitmap.createBitmap(maxWidth, maxHeight, Config.ARGB_8888);
-        }
-
-        c.setBitmap(preview);
-        // Draw a desaturated/scaled version of the icon in the background as a watermark
-        Paint p = mCachedShortcutPreviewPaint.get();
-        if (p == null) {
-            p = new Paint();
-            ColorMatrix colorMatrix = new ColorMatrix();
-            colorMatrix.setSaturation(0);
-            p.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
-            p.setAlpha((int) (255 * 0.06f));
-            mCachedShortcutPreviewPaint.set(p);
-        }
-        c.drawBitmap(tempBitmap, 0, 0, p);
-        c.setBitmap(null);
-
-        renderDrawableToBitmap(icon, preview, 0, 0, mAppIconSize, mAppIconSize);
-
-        return preview;
     }
 
     private static void renderDrawableToBitmap(
             Drawable d, Bitmap bitmap, int x, int y, int w, int h) {
         if (bitmap != null) {
-            Canvas c = new Canvas(bitmap);
+            final Canvas c = new Canvas(bitmap);
             Rect oldBounds = d.copyBounds();
             d.setBounds(x, y, x + w, y + h);
             d.draw(c);

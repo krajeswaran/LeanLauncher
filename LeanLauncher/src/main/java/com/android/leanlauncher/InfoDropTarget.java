@@ -61,14 +61,6 @@ public class InfoDropTarget extends ButtonDropTarget {
         if (null != mDrawable) {
             mDrawable.setCrossFadeEnabled(true);
         }
-
-        // Remove the text in the Phone UI in landscape
-        int orientation = getResources().getConfiguration().orientation;
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            if (!LauncherAppState.getInstance().isScreenLarge()) {
-                setText("");
-            }
-        }
     }
 
     @Override
@@ -81,8 +73,8 @@ public class InfoDropTarget extends ButtonDropTarget {
             componentName = ((AppInfo) d.dragInfo).componentName;
         } else if (d.dragInfo instanceof ShortcutInfo) {
             componentName = ((ShortcutInfo) d.dragInfo).intent.getComponent();
-        } else if (d.dragInfo instanceof PendingAddItemInfo) {
-            componentName = ((PendingAddItemInfo) d.dragInfo).componentName;
+        } else if (d.dragInfo instanceof PendingAddWidgetInfo) {
+            componentName = ((PendingAddWidgetInfo) d.dragInfo).componentName;
         }
         final UserHandleCompat user;
         if (d.dragInfo instanceof ItemInfo) {
@@ -107,6 +99,9 @@ public class InfoDropTarget extends ButtonDropTarget {
         // Hide this button unless we are dragging something from AllApps
         if (!source.supportsAppInfoDropTarget()) {
             isVisible = false;
+            setVisibility(GONE);
+        } else {
+            setVisibility(VISIBLE);
         }
 
         mActive = isVisible;

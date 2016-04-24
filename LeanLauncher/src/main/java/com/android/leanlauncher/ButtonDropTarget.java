@@ -35,7 +35,6 @@ public class ButtonDropTarget extends TextView implements DropTarget, DragContro
 
     protected Launcher mLauncher;
     private int mBottomDragPadding;
-    protected TextView mText;
     protected DeleteDropTargetBar mDeleteDropTargetBar;
 
     /** Whether this drop target is active for the current drag */
@@ -64,7 +63,7 @@ public class ButtonDropTarget extends TextView implements DropTarget, DragContro
         return false;
     }
 
-    public void setSearchDropTargetBar(DeleteDropTargetBar deleteDropTargetBar) {
+    public void setDeleteDropTargetBar(DeleteDropTargetBar deleteDropTargetBar) {
         mDeleteDropTargetBar = deleteDropTargetBar;
     }
 
@@ -130,28 +129,25 @@ public class ButtonDropTarget extends TextView implements DropTarget, DragContro
         Rect to = new Rect();
         dragLayer.getViewRectRelativeToSelf(this, to);
 
-        final int width = drawableWidth;
-        final int height = drawableHeight;
-
         final int left;
         final int right;
 
         if (isRtl()) {
             right = to.right - getPaddingRight();
-            left = right - width;
+            left = right - drawableWidth;
         } else {
             left = to.left + getPaddingLeft();
-            right = left + width;
+            right = left + drawableWidth;
         }
 
-        final int top = to.top + (getMeasuredHeight() - height) / 2;
-        final int bottom = top +  height;
+        final int top = to.top + (getMeasuredHeight() - drawableHeight) / 2;
+        final int bottom = top + drawableHeight;
 
         to.set(left, top, right, bottom);
 
         // Center the destination rect about the trash icon
-        final int xOffset = -(viewWidth - width) / 2;
-        final int yOffset = -(viewHeight - height) / 2;
+        final int xOffset = -(viewWidth - drawableWidth) / 2;
+        final int yOffset = -(viewHeight - drawableHeight) / 2;
         to.offset(xOffset, yOffset);
 
         return to;

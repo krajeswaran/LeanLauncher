@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~   Copyright (C) 2015. Kumaresan Rajeswaran
+  ~
+  ~   Licensed under the Apache License, Version 2.0 (the "License");
+  ~   you may not use this file except in compliance with the License.
+  ~   You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~   Unless required by applicable law or agreed to in writing, software
+  ~   distributed under the License is distributed on an "AS IS" BASIS,
+  ~   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~   See the License for the specific language governing permissions and
+  ~   limitations under the License.
+  ~
+  -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <com.android.leanlauncher.SearchAutoCompleteTextView
+        android:id="@+id/et_search_apps"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/search_bar_autocomplete_height"
+        android:theme="@android:style/Theme.DeviceDefault"
+        android:hint="@string/hint_app_search_widget"
+        android:textColorHint="@android:color/secondary_text_light_nodisable"
+        android:fontFamily="sans-serif-condensed"
+        android:textSize="@dimen/search_widget_text_size"
+        android:inputType="textAutoComplete"
+        android:clickable="true"
+        android:drawableLeft="@android:drawable/ic_menu_search"
+        android:completionThreshold="1"
+        android:layout_margin="@dimen/status_bar_edge_ignore"
+        android:singleLine="true"
+        android:dropDownHeight="wrap_content"
+        android:drawablePadding="@dimen/search_widget_drawable_padding"
+        />
+
+</LinearLayout>

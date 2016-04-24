@@ -86,9 +86,7 @@ class AppWidgetManagerCompatVL extends AppWidgetManagerCompat {
             AppWidgetHost host, int requestCode) {
         try {
             host.startAppWidgetConfigureActivityForResult(activity, widgetId, 0, requestCode, null);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(activity, R.string.activity_not_found, Toast.LENGTH_SHORT).show();
-        } catch (SecurityException e) {
+        } catch (ActivityNotFoundException | SecurityException e) {
             Toast.makeText(activity, R.string.activity_not_found, Toast.LENGTH_SHORT).show();
         }
     }
@@ -96,44 +94,5 @@ class AppWidgetManagerCompatVL extends AppWidgetManagerCompat {
     @Override
     public Drawable loadPreview(AppWidgetProviderInfo info) {
         return info.loadPreviewImage(mContext, 0);
-    }
-
-    @Override
-    public Drawable loadIcon(AppWidgetProviderInfo info, IconCache cache) {
-        return info.loadIcon(mContext, cache.getFullResIconDpi());
-    }
-
-    @Override
-    public Bitmap getBadgeBitmap(AppWidgetProviderInfo info, Bitmap bitmap) {
-        if (info.getProfile().equals(android.os.Process.myUserHandle())) {
-            return bitmap;
-        }
-
-        // Add a user badge in the bottom right of the image.
-        final Resources res = mContext.getResources();
-        final int badgeSize = res.getDimensionPixelSize(R.dimen.profile_badge_size);
-        final int badgeMargin = res.getDimensionPixelSize(R.dimen.profile_badge_margin);
-        final Rect badgeLocation = new Rect(0, 0, badgeSize, badgeSize);
-
-        final int top = bitmap.getHeight() - badgeSize - badgeMargin;
-        if (res.getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
-            badgeLocation.offset(badgeMargin, top);
-        } else {
-            badgeLocation.offset(bitmap.getWidth() - badgeSize - badgeMargin, top);
-        }
-
-        Drawable drawable = mPm.getUserBadgedDrawableForDensity(
-                new BitmapDrawable(res, bitmap), info.getProfile(), badgeLocation, 0);
-
-        if (drawable instanceof BitmapDrawable) {
-            return ((BitmapDrawable) drawable).getBitmap();
-        }
-
-        bitmap.eraseColor(Color.TRANSPARENT);
-        Canvas c = new Canvas(bitmap);
-        drawable.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-        drawable.draw(c);
-        c.setBitmap(null);
-        return bitmap;
     }
 }

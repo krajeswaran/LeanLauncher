@@ -31,7 +31,8 @@
         android:label="@string/application_name"
         android:largeHeap="@bool/config_largeHeap"
         android:restoreAnyVersion="true"
-        android:supportsRtl="true" >
+        android:installLocation="internalOnly"
+        >
 
         <activity
             android:name="com.android.leanlauncher.Launcher"
@@ -40,7 +41,7 @@
             android:stateNotNeeded="true"
             android:theme="@android:style/Theme.Wallpaper.NoTitleBar.Fullscreen"
             android:windowSoftInputMode="adjustPan"
-            android:screenOrientation="nosensor"
+            android:screenOrientation="locked"
             android:enabled="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -60,6 +61,17 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="com.android.leanlauncher.SearchAppsActivity"
+            android:windowSoftInputMode="stateVisible|adjustResize"
+            android:launchMode="singleTask"
+            android:clearTaskOnLaunch="true"
+            android:screenOrientation="locked"
+            android:stateNotNeeded="true"
+            android:theme="@style/noAnimTheme"
+            android:enabled="true">
+        </activity>
+
         <!-- Intent received used to initialize a restored widget -->
         <receiver android:name="com.android.leanlauncher.AppWidgetsRestoredReceiver" >
             <intent-filter>
@@ -74,6 +86,15 @@
                 <action android:name="android.intent.action.PACKAGE_REMOVED"/>
                 <data android:scheme="package"/>
             </intent-filter>
+        </receiver>
+
+        <receiver android:name="com.android.leanlauncher.SearchAppsWidgetProvider"
+            android:label="LeanLauncher Search Widget" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                       android:resource="@xml/search_apps_widget_provider" />
         </receiver>
 
         <!-- The settings provider contains Home's data, like the workspace favorites -->

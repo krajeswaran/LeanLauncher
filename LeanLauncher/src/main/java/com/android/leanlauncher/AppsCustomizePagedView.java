@@ -24,7 +24,6 @@ import android.appwidget.AppWidgetProviderInfo;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
@@ -94,7 +93,6 @@ class AsyncTaskPageData {
     }
     int page;
     ArrayList<Object> items;
-    ArrayList<Bitmap> sourceImages;
     ArrayList<Bitmap> generatedImages;
     int maxImageWidth;
     int maxImageHeight;
@@ -161,7 +159,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
     private Launcher mLauncher;
     private DragController mDragController;
     private final LayoutInflater mLayoutInflater;
-    private final PackageManager mPackageManager;
 
     // Save and Restore
     private int mSaveInstanceStateItemIndex = -1;
@@ -169,9 +166,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
     // Content
     private ArrayList<AppInfo> mApps;
     private ArrayList<Object> mWidgets;
-
-    // Caching
-    private IconCache mIconCache;
 
     // Dimens
     private int mContentWidth, mContentHeight;
@@ -214,10 +208,8 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
     public AppsCustomizePagedView(Context context, AttributeSet attrs) {
         super(context, attrs);
         mLayoutInflater = LayoutInflater.from(context);
-        mPackageManager = context.getPackageManager();
         mApps = new ArrayList<AppInfo>();
         mWidgets = new ArrayList<Object>();
-        mIconCache = (LauncherAppState.getInstance()).getIconCache();
         mRunningTasks = new ArrayList<AppsCustomizeAsyncTask>();
 
         // Save the default widget preview background
@@ -389,9 +381,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         for (Object o : widgetsAndShortcuts) {
             if (o instanceof AppWidgetProviderInfo) {
                 AppWidgetProviderInfo widget = (AppWidgetProviderInfo) o;
-                if (!app.shouldShowAppOrWidgetProvider(widget.provider)) {
-                    continue;
-                }
+                // TODO Hide widget if app is hidden by user
                 if (widget.minWidth > 0 && widget.minHeight > 0) {
                     // Ensure that all widgets we show can be added on a workspace of this size
                     int[] spanXY = Launcher.getSpanForWidget(mLauncher, widget);
@@ -613,7 +603,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         mDraggingWidget = true;
         // Get the widget preview as the drag representation
         ImageView image = (ImageView) v.findViewById(R.id.widget_preview);
-        PendingAddItemInfo createItemInfo = (PendingAddItemInfo) v.getTag();
+        PendingAddWidgetInfo createItemInfo = (PendingAddWidgetInfo) v.getTag();
 
         // If the ImageView doesn't have a drawable yet, the widget preview hasn't been loaded and
         // we abort the drag.
@@ -623,12 +613,12 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         }
 
         // Compose the drag image
-        Bitmap preview;
+        Bitmap preview = null;
         Bitmap outline;
         float scale = 1f;
         Point previewPadding = null;
 
-        if (createItemInfo instanceof PendingAddWidgetInfo) {
+        if (createItemInfo != null) {
             // This can happen in some weird cases involving multi-touch. We can't start dragging
             // the widget if this is null, so we break out.
             if (mCreateWidgetInfo == null) {
@@ -665,16 +655,10 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
                         (previewDrawable.getIntrinsicWidth() - previewWidthInAppsCustomize) / 2;
                 previewPadding = new Point(padding, 0);
             }
-        } else {
-            PendingAddShortcutInfo createShortcutInfo = (PendingAddShortcutInfo) v.getTag();
-            Drawable icon = mIconCache.getFullResIcon(createShortcutInfo.shortcutActivityInfo);
-            preview = Utilities.createIconBitmap(icon, mLauncher);
-            createItemInfo.spanX = createItemInfo.spanY = 1;
         }
 
         // Don't clip alpha values for the drag outline if we're using the default widget preview
-        boolean clipAlpha = !(createItemInfo instanceof PendingAddWidgetInfo &&
-                (((PendingAddWidgetInfo) createItemInfo).previewImage == 0));
+        boolean clipAlpha = !(createItemInfo != null && createItemInfo.previewImage == 0);
 
         // Save the preview for the outline generation, then dim the preview
         outline = Bitmap.createScaledBitmap(preview, preview.getWidth(), preview.getHeight(),
@@ -928,12 +912,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         int heightSpec = MeasureSpec.makeMeasureSpec(mContentHeight, MeasureSpec.AT_MOST);
         layout.measure(widthSpec, heightSpec);
 
-        Drawable bg = getContext().getResources().getDrawable(R.drawable.quantum_panel_dark);
-        if (bg != null) {
-            bg.setAlpha(mPageBackgroundsVisible ? 255: 0);
-            layout.setBackground(bg);
-        }
-
         setVisibilityOnChildren(layout, View.VISIBLE);
     }
 
@@ -1087,11 +1065,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         int widthSpec = MeasureSpec.makeMeasureSpec(mContentWidth, MeasureSpec.AT_MOST);
         int heightSpec = MeasureSpec.makeMeasureSpec(mContentHeight, MeasureSpec.AT_MOST);
 
-        Drawable bg = getContext().getResources().getDrawable(R.drawable.quantum_panel_dark);
-        if (bg != null) {
-            bg.setAlpha(mPageBackgroundsVisible ? 255 : 0);
-            layout.setBackground(bg);
-        }
         layout.measure(widthSpec, heightSpec);
     }
 
@@ -1118,7 +1091,7 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
         layout.setColumnCount(layout.getCellCountX());
         for (int i = 0; i < items.size(); ++i) {
             Object rawInfo = items.get(i);
-            PendingAddItemInfo createItemInfo = null;
+            PendingAddWidgetInfo createItemInfo = null;
             PagedViewWidget widget = (PagedViewWidget) mLayoutInflater.inflate(
                     R.layout.apps_customize_widget, layout, false);
             if (rawInfo instanceof AppWidgetProviderInfo) {
@@ -1137,15 +1110,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
                 widget.applyFromAppWidgetProviderInfo(info, -1, spanXY, getWidgetPreviewLoader());
                 widget.setTag(createItemInfo);
                 widget.setShortPressListener(this);
-            } else if (rawInfo instanceof ResolveInfo) {
-                // Fill in the shortcuts information
-                ResolveInfo info = (ResolveInfo) rawInfo;
-                createItemInfo = new PendingAddShortcutInfo(info.activityInfo);
-                createItemInfo.itemType = LauncherSettings.Favorites.ITEM_TYPE_SHORTCUT;
-                createItemInfo.componentName = new ComponentName(info.activityInfo.packageName,
-                        info.activityInfo.name);
-                widget.applyFromResolveInfo(mPackageManager, info, getWidgetPreviewLoader());
-                widget.setTag(createItemInfo);
             }
             widget.setOnClickListener(this);
             widget.setOnLongClickListener(this);
@@ -1497,10 +1461,6 @@ public class AppsCustomizePagedView extends PagedViewWithDraggableItems implemen
                         + " resizeMode=" + info.resizeMode + " configure=" + info.configure
                         + " initialLayout=" + info.initialLayout
                         + " minWidth=" + info.minWidth + " minHeight=" + info.minHeight);
-            } else if (i instanceof ResolveInfo) {
-                ResolveInfo info = (ResolveInfo) i;
-                Log.d(tag, "   label=\"" + info.loadLabel(mPackageManager) + "\" icon="
-                        + info.icon);
             }
         }
     }

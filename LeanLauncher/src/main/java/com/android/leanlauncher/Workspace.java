@@ -367,10 +367,10 @@ public class Workspace extends ViewGroup
 
     public void addNewWorkspace() {
         // Log to disk
-        Launcher.addDumpLog(TAG, "11683562 - addNewWorkspace(): " + getChildCount(), true);
+        Log.e(TAG, "11683562 - addNewWorkspace(): " + getChildCount());
 
         if (mWorkspace != null) {
-            Launcher.addDumpLog(TAG, "Screen already exists!", true);
+            Log.e(TAG, "Screen already exists!");
             return;
         }
 
@@ -380,7 +380,8 @@ public class Workspace extends ViewGroup
         mWorkspace.setOnClickListener(mLauncher);
         mWorkspace.setSoundEffectsEnabled(false);
 		mWorkspace.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
-        mWorkspace.setClipToPadding(true);
+        mWorkspace.setClipChildren(false);
+        mWorkspace.setClipToPadding(false);
 
         // Add an all apps Icon
         addAllAppsIcon();
@@ -449,7 +450,7 @@ public class Workspace extends ViewGroup
             // TODO: This branch occurs when the workspace is adding views
             // outside of the defined grid
             // maybe we should be deleting these items from the LauncherModel?
-            Launcher.addDumpLog(TAG, "Failed to add to item at (" + lp.cellX + "," + lp.cellY + ") to CellLayout", true);
+            Log.d(TAG, "Failed to add to item at (" + lp.cellX + "," + lp.cellY + ") to CellLayout");
         }
 
         child.setHapticFeedbackEnabled(false);
@@ -813,7 +814,7 @@ public class Workspace extends ViewGroup
         return bounds;
     }
 
-    public void onDragStartedWithItem(PendingAddItemInfo info, Bitmap b, boolean clipAlpha) {
+    public void onDragStartedWithItem(PendingAddWidgetInfo info, Bitmap b, boolean clipAlpha) {
         int[] size = estimateItemSize(info.spanX, info.spanY, false);
 
         // The outline is used to visualize where the item will land if dropped
@@ -891,19 +892,7 @@ public class Workspace extends ViewGroup
 
         mViewPort.set(0, 0, widthSize, heightSize);
 
-        /* Allow the height to be set as WRAP_CONTENT. This allows the particular case
-         * of the All apps view on XLarge displays to not take up more space then it needs. Width
-         * is still not allowed to be set as WRAP_CONTENT since many parts of the code expect
-         * each page to have the same width.
-         */
-        final int verticalPadding = getPaddingTop() + getPaddingBottom();
-        final int horizontalPadding = getPaddingLeft() + getPaddingRight();
-
-        // The children are given the same width and height as the workspace
-        // unless they were set to WRAP_CONTENT
         Log.d(TAG, "Workspace.onMeasure(): " + widthSize + ", " + heightSize);
-        Log.d(TAG, "Workspace.horizontalPadding: " + horizontalPadding);
-        Log.d(TAG, "Workspace.verticalPadding: " + verticalPadding);
 
         // disallowing padding in paged view (just pass 0)
         final View child = getChildAt(0);
@@ -1941,8 +1930,8 @@ public class Workspace extends ViewGroup
         final long container =
                     LauncherSettings.Favorites.CONTAINER_DESKTOP;
 
-        if (info instanceof PendingAddItemInfo) {
-            final PendingAddItemInfo pendingInfo = (PendingAddItemInfo) dragInfo;
+        if (info instanceof PendingAddWidgetInfo) {
+            final PendingAddWidgetInfo pendingInfo = (PendingAddWidgetInfo) dragInfo;
             final ItemInfo item = (ItemInfo) d.dragInfo;
             boolean updateWidgetSize = false;
             int minSpanX = item.spanX;
@@ -2114,9 +2103,8 @@ public class Workspace extends ViewGroup
 
         int[] finalPos = new int[2];
         float scaleXY[] = new float[2];
-        boolean scalePreview = !(info instanceof PendingAddShortcutInfo);
         getFinalPositionForDropAnimation(finalPos, scaleXY, dragView, cellLayout, info, mTargetCell,
-                external, scalePreview);
+                external, true);
 
         Resources res = mLauncher.getResources();
         final int duration = res.getInteger(R.integer.config_dropAnimMaxDuration) - 200;

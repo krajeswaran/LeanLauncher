@@ -31,7 +31,7 @@ import java.util.List;
  * Stores the list of all applications for the all apps view.
  */
 class AllAppsList {
-    public static final int DEFAULT_APPLICATIONS_NUMBER = 42;
+    public static final int DEFAULT_APPLICATIONS_NUMBER = 50;
 
     /** The list off all apps. */
     public ArrayList<AppInfo> data =
@@ -46,14 +46,11 @@ class AllAppsList {
 
     private IconCache mIconCache;
 
-    private AppFilter mAppFilter;
-
     /**
      * Boring constructor.
      */
-    public AllAppsList(IconCache iconCache, AppFilter appFilter) {
+    public AllAppsList(IconCache iconCache) {
         mIconCache = iconCache;
-        mAppFilter = appFilter;
     }
 
     /**
@@ -63,9 +60,6 @@ class AllAppsList {
      * If the app is already in the list, doesn't add it.
      */
     public void add(AppInfo info) {
-        if (mAppFilter != null && !mAppFilter.shouldShowApp(info.componentName)) {
-            return;
-        }
         if (findActivity(data, info.componentName, info.user)) {
             return;
         }
@@ -75,7 +69,6 @@ class AllAppsList {
 
     public void clear() {
         data.clear();
-        // TODO: do we clear these too?
         added.clear();
         removed.clear();
         modified.clear();
@@ -153,7 +146,7 @@ class AllAppsList {
                     add(new AppInfo(context, info, user, mIconCache, null));
                 } else {
                     mIconCache.remove(applicationInfo.componentName, user);
-                    mIconCache.getTitleAndIcon(applicationInfo, info, null);
+                    mIconCache.fetchAppIcon(applicationInfo, info, null);
                     modified.add(applicationInfo);
                 }
             }

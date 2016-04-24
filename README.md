@@ -40,12 +40,16 @@ Launcher icon from Material icons project + Android Asset Studio
 Todo
 ====
 
-- [ ] landscape ui fixes + other fixes
+- [ ] landscape: remove button
+- [ ] icon loading polish: reload not remembered
+- [ ] sd card boot thing:  apps disappearing 
+- [x] search widget: dropdown height
+- [x] Simple search widget for apps
+- [x] leaks + orientation not snapping back from app?
 - [ ] screenshots
 - [ ] commit, tag, f-droid publish
 - [ ] Add some tests maybe(...said every lazy dev ever)
 - [ ] All apps: categories/sort order support
-- [ ] Simple search widget for apps
 - [ ] Better landscape support
 - [ ] App specific prefs: Hide app, choose icon, double-click action
 - [ ] Use a less complicated model/db

@@ -19,14 +19,10 @@ package com.android.leanlauncher;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.util.Log;
 
 import com.android.leanlauncher.compat.UserHandleCompat;
 import com.android.leanlauncher.compat.UserManagerCompat;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -113,14 +109,27 @@ public class ItemInfo {
 
     UserHandleCompat user;
 
+    /**
+     *  Icon customized by user
+     */
+    Intent.ShortcutIconResource iconResource;
+
+    /**
+     * Flag to indicate if the shortcut is visible on all apps
+     */
+    boolean isHidden;
+
+    /**
+     * Count of times this shortcut was launched
+     */
+    int launchCounter = 0;
+
     ItemInfo() {
         user = UserHandleCompat.myUserHandle();
     }
 
     ItemInfo(ItemInfo info) {
         copyFrom(info);
-        // tempdebug:
-        LauncherModel.checkItemInfo(this);
     }
 
     public void copyFrom(ItemInfo info) {
@@ -135,17 +144,9 @@ public class ItemInfo {
         contentDescription = info.contentDescription;
     }
 
-    public Intent getIntent() {
-        throw new RuntimeException("Unexpected Intent");
-    }
-
     /**
      * Write the fields of this item to the DB
-     * 
-     * @param context A context object to use for getting UserManagerCompat
-     * @param values
      */
-
     void onAddToDatabase(Context context, ContentValues values) {
         values.put(LauncherSettings.BaseLauncherColumns.ITEM_TYPE, itemType);
         values.put(LauncherSettings.Favorites.CONTAINER, container);
@@ -155,6 +156,16 @@ public class ItemInfo {
         values.put(LauncherSettings.Favorites.SPANY, spanY);
         long serialNumber = UserManagerCompat.getInstance(context).getSerialNumberForUser(user);
         values.put(LauncherSettings.Favorites.PROFILE_ID, serialNumber);
+
+        if (iconResource != null) {
+            values.put(LauncherSettings.BaseLauncherColumns.ICON_PACKAGE,
+                    iconResource.packageName);
+            values.put(LauncherSettings.BaseLauncherColumns.ICON_RESOURCE,
+                    iconResource.resourceName);
+        }
+
+        values.put(LauncherSettings.Favorites.IS_HIDDEN, isHidden);
+        values.put(LauncherSettings.Favorites.LAUNCH_COUNT, launchCounter);
     }
 
     void updateValuesWithCoordinates(ContentValues values, int cellX, int cellY) {

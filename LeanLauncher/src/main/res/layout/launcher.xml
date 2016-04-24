@@ -17,7 +17,6 @@
 <!-- Full screen view projects under the status bar and contains the background -->
 <com.android.leanlauncher.LauncherRootView
     xmlns:android="http://schemas.android.com/apk/res/android"
-
     android:id="@+id/launcher"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -28,6 +27,7 @@
         android:id="@+id/drag_layer"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
 
         <com.android.leanlauncher.Workspace
             android:id="@+id/workspace"
@@ -41,10 +41,15 @@
             android:id="@+id/overview_panel"
             android:visibility="gone" />
 
+        <!-- Keep these behind the workspace so that they are not visible when
+             we go into AllApps -->
         <include
             android:id="@+id/delete_drop_target_bar"
             layout="@layout/delete_drop_target_bar"
-            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="bottom|center_horizontal"
+			android:visibility="gone"
             />
 
         <include layout="@layout/apps_customize_pane"

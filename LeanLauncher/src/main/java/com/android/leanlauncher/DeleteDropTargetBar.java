@@ -33,7 +33,6 @@ import android.widget.FrameLayout;
 public class DeleteDropTargetBar extends FrameLayout implements DragController.DragListener {
 
     private static final int sTransitionInDuration = 200;
-    private static final int sTransitionOutDuration = 175;
 
     private ObjectAnimator mDropTargetBarAnim;
     private static final AccelerateInterpolator sAccelerateInterpolator =
@@ -42,10 +41,7 @@ public class DeleteDropTargetBar extends FrameLayout implements DragController.D
     private View mDropTargetBar;
     private ButtonDropTarget mInfoDropTarget;
     private ButtonDropTarget mDeleteDropTarget;
-    private int mBarHeight;
     private boolean mDeferOnDragEnd = false;
-
-    private boolean mEnableDropDownDropTargets;
 
     public DeleteDropTargetBar(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
@@ -96,21 +92,19 @@ public class DeleteDropTargetBar extends FrameLayout implements DragController.D
         mInfoDropTarget = (ButtonDropTarget) mDropTargetBar.findViewById(R.id.info_target_text);
         mDeleteDropTarget = (ButtonDropTarget) mDropTargetBar.findViewById(R.id.delete_target_text);
 
-        mInfoDropTarget.setSearchDropTargetBar(this);
-        mDeleteDropTarget.setSearchDropTargetBar(this);
+        mInfoDropTarget.setDeleteDropTargetBar(this);
+        mDeleteDropTarget.setDeleteDropTargetBar(this);
 
-        mEnableDropDownDropTargets =
-            getResources().getBoolean(R.bool.config_useDropTargetDownTransition);
+        boolean enableDropDownDropTargets = getResources().getBoolean(R.bool.config_useDropTargetDownTransition);
 
         // Create the various fade animations
-        if (mEnableDropDownDropTargets) {
+        if (enableDropDownDropTargets) {
             LauncherAppState app = LauncherAppState.getInstance();
             DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
-            mBarHeight = grid.deleteBarSpaceHeightPx;
-            mDropTargetBar.setTranslationY(-mBarHeight);
+            int barHeight = grid.deleteBarSpaceHeightPx;
+            mDropTargetBar.setTranslationY(-barHeight);
             mDropTargetBarAnim = LauncherAnimUtils.ofFloat(mDropTargetBar, "translationY",
-                    -mBarHeight, 0f);
-
+                    -barHeight, 0f);
         } else {
             mDropTargetBar.setAlpha(0f);
             mDropTargetBarAnim = LauncherAnimUtils.ofFloat(mDropTargetBar, "alpha", 0f, 1f);
@@ -122,16 +116,6 @@ public class DeleteDropTargetBar extends FrameLayout implements DragController.D
 		mDropTargetBar.setVisibility(VISIBLE);
         prepareStartAnimation(mDropTargetBar);
         mDropTargetBarAnim.reverse();
-    }
-
-    /*
-     * Gets various transition durations.
-     */
-    public int getTransitionInDuration() {
-        return sTransitionInDuration;
-    }
-    public int getTransitionOutDuration() {
-        return sTransitionOutDuration;
     }
 
     /*

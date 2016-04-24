@@ -108,7 +108,7 @@ public class BubbleTextView extends TextView {
         LauncherAppState app = LauncherAppState.getInstance();
         DeviceProfile grid = app.getDynamicGrid().getDeviceProfile();
 
-        Bitmap iconBitmap = app.getIconCache().getIcon(info.intent, info.user);
+        Bitmap iconBitmap = app.getIconCache().getAppIcon(info);
         FastBitmapDrawable iconDrawable = Utilities.createIconDrawable(iconBitmap);
         setCompoundDrawables(null, iconDrawable, null, null);
         setCompoundDrawablePadding(grid.iconDrawablePaddingPx);
@@ -123,9 +123,6 @@ public class BubbleTextView extends TextView {
 
     @Override
     public void setTag(Object tag) {
-        if (tag != null) {
-            LauncherModel.checkItemInfo((ItemInfo) tag);
-        }
         super.setTag(tag);
     }
 

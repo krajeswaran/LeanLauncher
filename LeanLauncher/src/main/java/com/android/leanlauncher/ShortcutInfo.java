@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * Represents a launchable icon on the workspaces and in folders.
+ * Represents a launchable icon on the workspace
  */
 public class ShortcutInfo extends ItemInfo {
 
@@ -56,11 +56,6 @@ public class ShortcutInfo extends ItemInfo {
      */
     int isDisabled = DEFAULT;
 
-    int status;
-
-    /**
-     * TODO move this to status
-     */
     int flags = 0;
 
     ShortcutInfo() {
@@ -79,7 +74,7 @@ public class ShortcutInfo extends ItemInfo {
     }
 
     public Bitmap getIcon(IconCache iconCache) {
-        return iconCache.getIcon(intent, user);
+        return iconCache.getAppIcon(this);
     }
 
     @Override

@@ -1,3 +1,20 @@
+<!--
+  ~   Copyright (C) 2015. Kumaresan Rajeswaran
+  ~
+  ~   Licensed under the Apache License, Version 2.0 (the "License");
+  ~   you may not use this file except in compliance with the License.
+  ~   You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~   Unless required by applicable law or agreed to in writing, software
+  ~   distributed under the License is distributed on an "AS IS" BASIS,
+  ~   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~   See the License for the specific language governing permissions and
+  ~   limitations under the License.
+  ~
+  -->
+
 <resources>
 <!-- Dynamic Grid -->
     <integer name="config_dynamic_grid_max_long_edge_cell_count">7</integer>
@@ -30,21 +47,10 @@
     <!-- Fade/zoom in/out duration & scale in the AllApps transition.
          Note: This should be less than the workspaceShrinkTime as they happen together. -->
     <integer name="config_appsCustomizeRevealTime">220</integer>
-    <integer name="config_appsCustomizeZoomInTime">350</integer>
-    <integer name="config_appsCustomizeZoomOutTime">600</integer>
-    <integer name="config_appsCustomizeZoomScaleFactor">7</integer>
-    <integer name="config_appsCustomizeFadeInTime">250</integer>
-    <integer name="config_appsCustomizeFadeOutTime">200</integer>
     <integer name="config_appsCustomizeWorkspaceShrinkTime">300</integer>
 
     <integer name="config_appsCustomizeConcealTime">250</integer>
     <integer name="config_appsCustomizeItemsAlphaStagger">60</integer>
-
-    <!-- This constant stores the ratio of the all apps button drawable which
-         is used for internal (baked-in) padding -->
-
-
-    <!-- Tab transition animation duration -->
 
     <!-- The slope, in percent, of the drag movement needed to drag an item out of
          AppsCustomize (y / x * 100%)  -->
@@ -52,7 +58,7 @@
 
 <!-- Workspace -->
     <!-- Whether or not the drop targets drop down as opposed to fade in -->
-    <bool name="config_useDropTargetDownTransition">false</bool>
+    <bool name="config_useDropTargetDownTransition">true</bool>
 
     <!-- The transition duration for the background of the drop targets -->
     <integer name="config_dropTargetBgTransitionDuration">0</integer>
@@ -73,14 +79,4 @@
 
     <!-- The distance at which the animation should take the max duration -->
     <integer name="config_dropAnimMaxDist">800</integer>
-
-    <!-- Properties controlling the workspace fade-out during dragging -->
-
-    <!-- Camera distance for the overscroll effect -->
-
-    <!-- Memory debugging, including a memory dump icon -->
-
-    <!-- Name of a subclass of leanlauncher.AppFilter used to
-         filter the activities shown in the launcher. Can be empty. -->
-    <string name="app_filter_class" translatable="false"></string>
 </resources>

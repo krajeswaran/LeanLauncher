@@ -17,7 +17,7 @@
 */
 -->
 
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <!-- Application name -->
     <string name="application_name" translatable="false">LeanLauncher</string>
     <!-- Accessibility-facing application name -->
@@ -25,7 +25,7 @@
     <!-- Displayed when user selects a shortcut for an app that was uninstalled [CHAR_LIMIT=none]-->
     <string name="activity_not_found">App isn\'t installed.</string>
     <!-- Displayed when user selects a shortcut for an app that is current not available [CHAR_LIMIT=none]-->
-    <string name="activity_not_available">App isn\'t available</string>
+    <string name="activity_not_available">App isn\'t available yet.</string>
     <!-- SafeMode shortcut error string -->
     <string name="safemode_shortcut_error">Downloaded app disabled in Safe mode</string>
     <!-- SafeMode widget error string -->
@@ -85,7 +85,7 @@
     <!-- Text for wallpaper change button -->
     <string name="wallpaper_button_text">Wallpapers</string>
     <!-- Text for settings button -->
-    <string name="settings_button_text">Settings</string>
+    <string name="settings_button_text">Home Settings</string>
 
     <!-- Preferences stuff -->
     <string name="pref_rotation_enabled_key">pref_rotation_enabled</string>
@@ -112,4 +112,6 @@
     </string>
     <string name="dialog_refresh_icons">Refreshing Icons…</string>
     <string name="pref_about">about</string>
+    <string name="hint_app_search_widget">Search for Apps</string>
+    <string name="help_search_result_app_icon">Matched App Icon</string>
 </resources>

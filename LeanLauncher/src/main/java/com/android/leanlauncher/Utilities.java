@@ -43,6 +43,8 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -93,42 +95,6 @@ public final class Utilities {
      */
     public static boolean isLmpOrAbove() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
-    }
-
-    /**
-     * Returns a bitmap suitable for the all apps view. If the package or the resource do not
-     * exist, it returns null.
-     */
-    static Bitmap createIconBitmap(String packageName, String resourceName, int fullResIconDpi,
-            Context context) {
-        PackageManager packageManager = context.getPackageManager();
-        // the resource
-        try {
-            Resources resources = packageManager.getResourcesForApplication(packageName);
-            if (resources != null) {
-                final int id = resources.getIdentifier(resourceName, null, null);
-                return createIconBitmap(
-                        resources.getDrawableForDensity(id, fullResIconDpi), context);
-            }
-        } catch (Exception e) {
-            // Icon not found.
-        }
-        return null;
-    }
-
-    /**
-     * Returns a bitmap which is of the appropriate size to be displayed as an icon
-     */
-    static Bitmap createIconBitmap(Bitmap icon, Context context) {
-        synchronized (sCanvas) { // we share the statics :-(
-            if (sIconWidth == -1) {
-                initStatics(context);
-            }
-        }
-        if (sIconWidth == icon.getWidth() && sIconHeight == icon.getHeight()) {
-            return icon;
-        }
-        return createIconBitmap(new BitmapDrawable(context.getResources(), icon), context);
     }
 
     /**
@@ -461,4 +427,16 @@ public final class Utilities {
         }
     }
 
+    public static void showStatusbar(Window window, Context context) {
+        boolean showStatusbar = PreferenceManager.getDefaultSharedPreferences(context).
+                getBoolean(context.getString(R.string.pref_statusbar_enabled_key), true);
+        View decorView = window.getDecorView();
+        if (showStatusbar) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+        }
+    }
 }

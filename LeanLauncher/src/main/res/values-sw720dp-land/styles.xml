@@ -17,7 +17,8 @@
   -->
 
 <resources>
-    <style name="PagedViewWidgetImageView">
-        <item name="android:paddingStart">@dimen/app_widget_preview_padding_left</item>
+    <style name="DropTargetButton" parent="DropTargetButtonBase">
+        <item name="android:paddingLeft">90dp</item>
+        <item name="android:paddingRight">40dp</item>
     </style>
 </resources>

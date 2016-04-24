@@ -119,7 +119,11 @@ public class LauncherAppsCompatVL extends LauncherAppsCompat {
         }
 
         public void onPackageChanged(String packageName, UserHandle user) {
-            mCallback.onPackageChanged(packageName, UserHandleCompat.fromUser(user));
+            // HACK!! GMS sends out this notification every few seconds
+            // ignore and preserve battery
+            if (!packageName.startsWith("com.google.android.gms")) {
+                mCallback.onPackageChanged(packageName, UserHandleCompat.fromUser(user));
+            }
         }
 
         public void onPackagesAvailable(String[] packageNames, UserHandle user, boolean replacing) {

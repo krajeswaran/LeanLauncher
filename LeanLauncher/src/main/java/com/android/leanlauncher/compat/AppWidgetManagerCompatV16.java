@@ -78,13 +78,4 @@ class AppWidgetManagerCompatV16 extends AppWidgetManagerCompat {
                 info.provider.getPackageName(), info.previewImage, null);
     }
 
-    @Override
-    public Drawable loadIcon(AppWidgetProviderInfo info, IconCache cache) {
-        return cache.getFullResIcon(info.provider.getPackageName(), info.icon);
-    }
-
-    @Override
-    public Bitmap getBadgeBitmap(AppWidgetProviderInfo info, Bitmap bitmap) {
-        return bitmap;
-    }
 }

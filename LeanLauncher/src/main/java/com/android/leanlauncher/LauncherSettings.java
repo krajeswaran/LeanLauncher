@@ -65,22 +65,6 @@ class LauncherSettings {
         int ITEM_TYPE_SHORTCUT = 1;
 
         /**
-         * The icon type.
-         * <P>Type: INTEGER</P>
-         */
-        String ICON_TYPE = "iconType";
-
-        /**
-         * The icon is a resource identified by a package name and an integer id.
-         */
-        int ICON_TYPE_RESOURCE = 0;
-
-        /**
-         * The icon is a bitmap.
-         */
-        int ICON_TYPE_BITMAP = 1;
-
-        /**
          * The icon package name, if icon type is ICON_TYPE_RESOURCE.
          * <P>Type: TEXT</P>
          */
@@ -91,12 +75,6 @@ class LauncherSettings {
          * <P>Type: TEXT</P>
          */
         String ICON_RESOURCE = "iconResource";
-
-        /**
-         * The custom icon bitmap, if icon type is ICON_TYPE_BITMAP.
-         * <P>Type: BLOB</P>
-         */
-        String ICON = "icon";
     }
 
     /**
@@ -153,7 +131,7 @@ class LauncherSettings {
         static final String CONTAINER = "container";
 
         /**
-         * The icon is a resource identified by a package name and an integer id.
+         * Default container for now.
          */
         static final int CONTAINER_DESKTOP = -100;
 
@@ -214,5 +192,15 @@ class LauncherSettings {
          * <P>Type: INTEGER</P>
          */
         static final String RESTORED = "restored";
+
+        /**
+         * Count of times this shortcut was launched
+         */
+        static final String LAUNCH_COUNT = "launchCount";
+
+        /**
+         * Is application hidden in all apps
+         */
+        static final String IS_HIDDEN = "isHidden";
     }
 }
