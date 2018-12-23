@@ -18,12 +18,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.2"
+    compileSdkVersion 28
+    buildToolsVersion "28.0.2"
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 23
+        targetSdkVersion 28
         versionCode System.getenv("BUILD_NUMBER") as Integer ?: 99999 // so you don't have to uninstall for dev builds
         versionName "1.0" + '.' + versionCode
     }
@@ -39,8 +39,10 @@ android {
         release {
             storeFile file("release.keystore")
             keyAlias "ReleaseKey"
-            storePassword System.console().readLine("\nKeystore password: ")
-            keyPassword System.console().readLine("\nKey password: ")
+            ant.input(message: 'Enter keystore password:', addproperty: 'keystorePassword', defaultValue : '')
+            storePassword ant.properties.keystorePassword
+            ant.input(message: 'Enter key password:', addproperty: 'keyPassword', defaultValue : '')
+            keyPassword ant.properties.keyPassword
         }
     }
 
@@ -52,22 +54,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.cfg'
             signingConfig signingConfigs.release
             zipAlignEnabled true
-
-            applicationVariants.all { variant ->
-                variant.outputs.each { output ->
-                    def file = output.outputFile
-                    output.outputFile = new File(file.parent, file.name.replace(".apk", "-v" + defaultConfig.versionName + ".apk"))
-                }
-            }
         }
     }
 }
 
 dependencies {
-    compile 'com.android.support:support-v13:23.1.1'
-
-		debugCompile 'com.squareup.leakcanary:leakcanary-android:1.4-beta2'
-		releaseCompile 'com.squareup.leakcanary:leakcanary-android-no-op:1.4-beta2'
-		testCompile 'com.squareup.leakcanary:leakcanary-android-no-op:1.4-beta2'
+    compile 'com.android.support:support-v13:24.1.1'
 }
 

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2015 Kumaresan Rajeswaran
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<!-- Full screen view projects under the status bar and contains the background -->
+<com.android.leanlauncher.LauncherRootView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+
+    android:id="@+id/launcher"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/workspace_bg"
+    android:fitsSystemWindows="true">
+
+    <com.android.leanlauncher.DragLayer
+        android:id="@+id/drag_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- The workspace contains 5 screens of cells -->
+        <com.android.leanlauncher.Workspace
+            android:id="@+id/workspace"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/status_bar_edge_ignore"
+            android:layout_marginBottom="@dimen/dynamic_grid_delete_bar_height"
+            />
+
+        <include layout="@layout/overview_panel"
+            android:id="@+id/overview_panel"
+            android:visibility="gone" />
+
+        <!-- Keep these behind the workspace so that they are not visible when
+             we go into AllApps -->
+
+        <include
+            android:id="@+id/delete_drop_target_bar"
+            layout="@layout/delete_drop_target_bar"
+            android:visibility="gone"
+            />
+
+        <include layout="@layout/apps_customize_pane"
+            android:id="@+id/apps_customize_pane"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="invisible" />
+    </com.android.leanlauncher.DragLayer>
+
+</com.android.leanlauncher.LauncherRootView>

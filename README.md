@@ -10,15 +10,46 @@ Because I was bored on a weekend(okay, several weekends) and frustrated with lau
 
 Screenshots
 -----------
+* Startup - no icons, no widgets, just emptiness
+<p align="center">
+  <img width="768" height="1024" src="screenshots/startup.png">
+</p>
+[screenshots/startup.png]
 
-Changelog
+* After adding some launchers and a wallpaper
+<p align="center">
+  <img width="768" height="1024" src="screenshots/busy.png">
+</p>
+
+* Adding some fancy widgets + our own app search widget
+<p align="center">
+  <img width="768" height="1024" src="screenshots/fullbusy.png">
+</p>
+
+* App drawer
+<p align="center">
+  <img width="768" height="1024" src="screenshots/appdrawer.png">
+</p>
+
+* Home screen configuration options
+<p align="center">
+  <img width="768" height="1024" src="screenshots/config.png">
+</p>
+
+* Other launcher settings
+<p align="center">
+  <img width="768" height="1024" src="screenshots/settings.png">
+</p>
+
+Features/Changelog
 =========
 
 * Migrated Launcher 3 to Android Studio/gradle project setup
+* A simple app search widget which doesn't need an internet connection to search your locally installed apps ;)
 * Support for Icon themes
 * Support for Swipe gestures
 * Removed extraneous permissions
-* Removed workspaces. Only one workspace
+* Removed workspaces. One workspace ought to be enough for everybody!
 * Removed Hotseat/"dock"
 * Removed folder support
 * Removed built-in wallpaper manager. You can still set wallpapers using an external app like G!Photos 
@@ -40,14 +71,8 @@ Launcher icon from Material icons project + Android Asset Studio
 Todo
 ====
 
-- [ ] landscape: xxxhdpi remove button, app info labels,  portrait xxx: workspace low margin too high, 
-- [ ] icon loading polish: icon masking 
+- [ ] icon loading polish: icon masking
 - [ ] sd card boot thing: perf issue + apps disappearing 
-- [x] search widget: dropdown height
-- [x] Simple search widget for apps
-- [x] leaks + orientation not snapping back from app?
-- [ ] screenshots
-- [ ] commit, tag, f-droid publish
 - [ ] Add some tests maybe(...said every lazy dev ever)
 - [ ] All apps: categories/sort order support
 - [ ] Better landscape support
