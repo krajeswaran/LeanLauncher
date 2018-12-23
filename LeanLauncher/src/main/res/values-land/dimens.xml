@@ -16,6 +16,8 @@
 
 <resources>
 <!-- QSB -->
+    <dimen name="toolbar_button_vertical_padding">0dip</dimen>
+    <dimen name="toolbar_button_horizontal_padding">20dip</dimen>
     <dimen name="dynamic_grid_delete_bar_height">24dp</dimen>
 
 <!-- AppsCustomize -->

@@ -15,6 +15,10 @@
 -->
 
 <resources>
+    <!-- QSB -->
+    <dimen name="toolbar_button_vertical_padding">0dip</dimen>
+    <dimen name="toolbar_button_horizontal_padding">20dip</dimen>
+
     <!-- the area at the edge of the screen that makes the workspace go left
          or right while you're dragging. -->
     <dimen name="scroll_zone">40dp</dimen>

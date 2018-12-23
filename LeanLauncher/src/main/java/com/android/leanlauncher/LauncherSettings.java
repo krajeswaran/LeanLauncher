@@ -131,7 +131,7 @@ class LauncherSettings {
         static final String CONTAINER = "container";
 
         /**
-         * Default container for now.
+         * The icon is a resource identified by a package name and an integer id.
          */
         static final int CONTAINER_DESKTOP = -100;
 

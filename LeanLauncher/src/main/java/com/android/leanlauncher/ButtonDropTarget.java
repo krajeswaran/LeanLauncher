@@ -63,7 +63,7 @@ public class ButtonDropTarget extends TextView implements DropTarget, DragContro
         return false;
     }
 
-    public void setDeleteDropTargetBar(DeleteDropTargetBar deleteDropTargetBar) {
+    public void setSearchDropTargetBar(DeleteDropTargetBar deleteDropTargetBar) {
         mDeleteDropTargetBar = deleteDropTargetBar;
     }
 

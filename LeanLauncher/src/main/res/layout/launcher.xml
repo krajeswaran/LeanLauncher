@@ -46,9 +46,6 @@
         <include
             android:id="@+id/delete_drop_target_bar"
             layout="@layout/delete_drop_target_bar"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="bottom|center_horizontal"
 			android:visibility="gone"
             />
 

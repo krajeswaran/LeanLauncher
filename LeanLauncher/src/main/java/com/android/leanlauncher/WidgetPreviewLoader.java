@@ -559,7 +559,7 @@ public class WidgetPreviewLoader {
                     / (mAppIconSize + 2 * minOffset), 1f);
 
             try {
-                Bitmap icon = mIconCache.getIconForComponent(info.configure, UserHandleCompat.myUserHandle());
+                Bitmap icon = mIconCache.getIconForComponent(info.configure, info.getProfile());
                 if (icon != null) {
                     int hoffset = (int) ((previewDrawableWidth - mAppIconSize * iconScale) / 2);
                     int yoffset = (int) ((previewDrawableHeight - mAppIconSize * iconScale) / 2);

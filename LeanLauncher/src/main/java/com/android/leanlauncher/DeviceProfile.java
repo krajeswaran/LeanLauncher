@@ -499,7 +499,8 @@ public class DeviceProfile {
         // Layout the search bar space
         View deleteDropTargetBar = launcher.getDeleteDropBar();
         lp = (FrameLayout.LayoutParams) deleteDropTargetBar.getLayoutParams();
-        lp.width = LayoutParams.MATCH_PARENT;
+        lp.gravity = Gravity.BOTTOM | Gravity.CENTER_VERTICAL;
+        lp.width = deleteBarSpaceWidthPx;
         lp.height = deleteBarSpaceHeightPx;
         deleteDropTargetBar.setLayoutParams(lp);
 

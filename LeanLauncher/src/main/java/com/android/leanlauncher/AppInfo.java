@@ -28,7 +28,6 @@ import com.android.leanlauncher.compat.UserHandleCompat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Map;
 
 /**
  * Represents an app in AllAppsView.
@@ -58,13 +57,12 @@ public class AppInfo extends ItemInfo {
      * Must not hold the Context.
      */
     public AppInfo(Context context, LauncherActivityInfoCompat info, UserHandleCompat user,
-            IconCache iconCache, Map<Object, CharSequence> labelCache) {
+            IconCache iconCache, ArrayMap<Object, CharSequence> labelCache) {
         this.componentName = info.getComponentName();
         this.container = ItemInfo.NO_ID;
 
         flags = initFlags(info);
-        iconCache.fetchAppIcon(this, info, labelCache);
-
+        iconCache.getTitleAndIcon(this, info, labelCache);
         intent = makeLaunchIntent(context, info, user);
         this.user = user;
     }

@@ -73,8 +73,8 @@ public class InfoDropTarget extends ButtonDropTarget {
             componentName = ((AppInfo) d.dragInfo).componentName;
         } else if (d.dragInfo instanceof ShortcutInfo) {
             componentName = ((ShortcutInfo) d.dragInfo).intent.getComponent();
-        } else if (d.dragInfo instanceof PendingAddWidgetInfo) {
-            componentName = ((PendingAddWidgetInfo) d.dragInfo).componentName;
+        } else if (d.dragInfo instanceof PendingAddItemInfo) {
+            componentName = ((PendingAddItemInfo) d.dragInfo).componentName;
         }
         final UserHandleCompat user;
         if (d.dragInfo instanceof ItemInfo) {
@@ -99,9 +99,6 @@ public class InfoDropTarget extends ButtonDropTarget {
         // Hide this button unless we are dragging something from AllApps
         if (!source.supportsAppInfoDropTarget()) {
             isVisible = false;
-            setVisibility(GONE);
-        } else {
-            setVisibility(VISIBLE);
         }
 
         mActive = isVisible;

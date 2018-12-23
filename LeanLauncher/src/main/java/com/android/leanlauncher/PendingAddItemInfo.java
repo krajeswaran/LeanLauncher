@@ -23,9 +23,31 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.Parcelable;
 
-class PendingAddWidgetInfo extends ItemInfo {
+/**
+ * We pass this object with a drag from the customization tray
+ */
+class PendingAddItemInfo extends ItemInfo {
+    /**
+     * The component that will be created.
+     */
     ComponentName componentName;
+}
 
+class PendingAddShortcutInfo extends PendingAddItemInfo {
+
+    ActivityInfo shortcutActivityInfo;
+
+    public PendingAddShortcutInfo(ActivityInfo activityInfo) {
+        shortcutActivityInfo = activityInfo;
+    }
+
+    @Override
+    public String toString() {
+        return "Shortcut: " + shortcutActivityInfo.packageName;
+    }
+}
+
+class PendingAddWidgetInfo extends PendingAddItemInfo {
     int minWidth;
     int minHeight;
     int minResizeWidth;

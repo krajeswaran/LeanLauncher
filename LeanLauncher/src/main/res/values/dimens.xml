@@ -32,6 +32,9 @@
     <dimen name="workspace_max_gap">16dp</dimen>
     <dimen name="workspace_overscroll_drawable_padding">0dp</dimen>
 
+    <dimen name="toolbar_button_vertical_padding">2dip</dimen>
+    <dimen name="toolbar_button_horizontal_padding">12dip</dimen>
+
 <!-- AllApps/Customize/AppsCustomize -->
     <dimen name="app_icon_size">48dp</dimen>
     <dimen name="apps_customize_horizontal_padding">0dp</dimen>

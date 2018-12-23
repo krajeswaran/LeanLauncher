@@ -373,6 +373,20 @@ public class Launcher extends Activity
                 info.minResizeHeight);
     }
 
+    public static void addDumpLog(String tag, String log, boolean debugLog) {
+        addDumpLog(tag, log, null, debugLog);
+    }
+
+    public static void addDumpLog(String tag, String log, Exception e, boolean debugLog) {
+        if (debugLog) {
+            if (e != null) {
+                Log.d(tag, log, e);
+            } else {
+                Log.d(tag, log);
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (DEBUG_STRICT_MODE) {
@@ -2015,10 +2029,13 @@ public class Launcher extends Activity
 
         final Resources res = getResources();
 
+        final int duration = res.getInteger(R.integer.config_appsCustomizeZoomInTime);
+        final int fadeDuration = res.getInteger(R.integer.config_appsCustomizeFadeInTime);
         final int revealDuration = res.getInteger(R.integer.config_appsCustomizeRevealTime);
         final int itemsAlphaStagger =
                 res.getInteger(R.integer.config_appsCustomizeItemsAlphaStagger);
 
+        final float scale = (float) res.getInteger(R.integer.config_appsCustomizeZoomScaleFactor);
         final View fromView = mWorkspace;
         final AppsCustomizeTabHost toView = mAppsCustomizeTabHost;
 
@@ -2229,10 +2246,14 @@ public class Launcher extends Activity
         boolean material = Utilities.isLmpOrAbove();
         Resources res = getResources();
 
+        final int duration = res.getInteger(R.integer.config_appsCustomizeZoomOutTime);
+        final int fadeOutDuration = res.getInteger(R.integer.config_appsCustomizeFadeOutTime);
         final int revealDuration = res.getInteger(R.integer.config_appsCustomizeConcealTime);
         final int itemsAlphaStagger =
                 res.getInteger(R.integer.config_appsCustomizeItemsAlphaStagger);
 
+        final float scaleFactor = (float)
+                res.getInteger(R.integer.config_appsCustomizeZoomScaleFactor);
         final View fromView = mAppsCustomizeTabHost;
         final View toView = mWorkspace;
         Animator workspaceAnim = null;
@@ -2682,7 +2703,7 @@ public class Launcher extends Activity
     @Override
     public void bindDefaultScreen() {
         // Log to disk
-        Log.d(TAG, "11683562 - bindDefaultScreen()");
+        Launcher.addDumpLog(TAG, "11683562 - bindDefaultScreen()", true);
         mWorkspace.addNewWorkspace();
     }
 
