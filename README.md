@@ -14,7 +14,6 @@ Screenshots
 <p align="center">
   <img height="1024" src="screenshots/startup.png">
 </p>
-[screenshots/startup.png]
 
 * After adding some launchers and a wallpaper
 <p align="center">
