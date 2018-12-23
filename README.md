@@ -12,33 +12,33 @@ Screenshots
 -----------
 * Startup - no icons, no widgets, just emptiness
 <p align="center">
-  <img width="768" height="1024" src="screenshots/startup.png">
+  <img height="1024" src="screenshots/startup.png">
 </p>
 [screenshots/startup.png]
 
 * After adding some launchers and a wallpaper
 <p align="center">
-  <img width="768" height="1024" src="screenshots/busy.png">
+  <img height="1024" src="screenshots/busy.png">
 </p>
 
 * Adding some fancy widgets + our own app search widget
 <p align="center">
-  <img width="768" height="1024" src="screenshots/fullbusy.png">
+  <img height="1024" src="screenshots/fullbusy.png">
 </p>
 
 * App drawer
 <p align="center">
-  <img width="768" height="1024" src="screenshots/appdrawer.png">
+  <img height="1024" src="screenshots/appdrawer.png">
 </p>
 
 * Home screen configuration options
 <p align="center">
-  <img width="768" height="1024" src="screenshots/config.png">
+  <img height="1024" src="screenshots/config.png">
 </p>
 
 * Other launcher settings
 <p align="center">
-  <img width="768" height="1024" src="screenshots/settings.png">
+  <img height="1024" src="screenshots/settings.png">
 </p>
 
 Features/Changelog
